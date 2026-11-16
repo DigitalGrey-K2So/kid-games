@@ -1,5 +1,5 @@
 /* Offline support. Change VERSION whenever you upload new copies of the games so the iPad picks them up. */
-var VERSION = 'kid-games-v4';
+var VERSION = 'kid-games-v5';
 var FILES = [
   './',
   'index.html',
@@ -12,6 +12,7 @@ var FILES = [
   'mango-dash.html',
   'splash-blast.html',
   'dino-valley.html',
+  'coop-defense.html',
   'manifest.webmanifest',
   'icon-180.png',
   'icon-192.png',
