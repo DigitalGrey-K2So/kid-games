@@ -425,7 +425,7 @@ function cat(k){
   if(home){ctx.fillStyle='#FFFBEF';ctx.strokeStyle=INK;ctx.lineWidth=2;ell(ctx,-10,-62,22,12);ctx.fill();ctx.stroke();ctx.scale(-1,1);ctx.fillStyle=INK;ctx.font='700 13px Fredoka,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('hmph!',10,-62);}
   ctx.restore();
   ctx.globalAlpha=1;
-  if(!home&&k.hp<k.max){ctx.fillStyle='rgba(74,42,18,.3)';rrect(ctx,x-24,y-66,48,7,3);ctx.fill();ctx.fillStyle='#7BE38F';rrect(ctx,x-24,y-66,48*k.hp/k.max,7,3);ctx.fill();}
+  if(!home&&k.hp<k.max){ctx.fillStyle='#4A2A12';rrect(ctx,x-27,y-69,54,13,6);ctx.fill();ctx.fillStyle='#FFFBEF';rrect(ctx,x-25,y-67,50,9,4);ctx.fill();ctx.fillStyle='#FF3B4A';rrect(ctx,x-25,y-67,Math.max(4,50*k.hp/k.max),9,4);ctx.fill();}
 }
 function dog(x,y,running){
   var leg=running?Math.sin(clock*30)*5:0;
