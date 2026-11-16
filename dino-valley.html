@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Dino Valley</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kid Games">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: sticker book, farm edition. Header with coins, a grassy valley board, and a shelf of big item stickers to place. */
+:root{
+  --page:#B8E68A;
+  --page-dot:#A8DB78;
+  --ink:#2C3A1E;
+  --paper:#FFFCEF;
+  --go:#FFD84D;
+  --font-display:'Fredoka','Arial Rounded MT Bold','Trebuchet MS',sans-serif;
+  --font-body:'Nunito','Avenir Next','Segoe UI',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{
+  background-color:var(--page);
+  background-image:radial-gradient(var(--page-dot) 18%,transparent 19%);
+  background-size:44px 44px;
+  color:var(--ink);font-family:var(--font-body);font-weight:700;
+  overflow:hidden;overscroll-behavior:none;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+#app{height:100%;display:flex;flex-direction:column;gap:10px;padding:12px 16px 16px}
+.sticker{font-family:var(--font-display);font-weight:600;color:var(--ink);background:var(--paper);border:4px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink)}
+button{cursor:pointer;font:inherit;color:inherit}
+button.sticker:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+button:focus-visible{outline:4px solid #fff;outline-offset:3px}
+#info{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,5vw,40px);line-height:1;margin:0;margin-right:auto;letter-spacing:.5px;text-shadow:3px 3px 0 var(--paper)}
+.stat{display:flex;align-items:center;gap:8px;padding:4px 16px 4px 12px;font-size:26px;font-variant-numeric:tabular-nums;min-height:56px}
+.stat .ico{font-size:26px;line-height:1}
+.bump{animation:bump .4s}
+@keyframes bump{40%{transform:scale(1.2) rotate(-5deg)}}
+a.mini{text-decoration:none}
+a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.mini{min-height:54px;min-width:54px;padding:0 12px;font-size:16px;display:flex;align-items:center;justify-content:center;gap:6px}
+#stage{flex:1;min-height:0;position:relative}
+#board{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:6px solid var(--ink);border-radius:22px;box-shadow:0 8px 0 var(--ink);background:#7FCB5E}
+#shelf{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none}
+#shelf::-webkit-scrollbar{display:none}
+.item{flex:0 0 auto;width:clamp(78px,11vw,104px);min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;border-radius:20px;font-size:15px;line-height:1.1}
+.item .emo{font-size:clamp(30px,4.5vw,40px);line-height:1}
+.item .price{font-family:var(--font-body);font-weight:800;font-size:14px;display:flex;align-items:center;gap:3px}
+.item[aria-pressed="true"]{background:#FFE066;transform:translateY(-4px);box-shadow:0 9px 0 var(--ink)}
+.item.poor{opacity:.5}
+#tip{text-align:center;font-family:var(--font-display);font-weight:600;font-size:18px;margin:0;min-height:22px}
+#overlay{position:absolute;inset:0;display:grid;place-items:center;z-index:3}
+#overlay[hidden]{display:none}
+#card{padding:20px 28px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;max-width:min(96%,520px);max-height:98%;overflow:auto}
+#card h2{font-family:var(--font-display);font-weight:700;font-size:32px;margin:0;text-wrap:balance}
+#card p{margin:0;font-size:18px}
+#playBtn{background:var(--go);font-size:30px;padding:12px 38px;min-height:74px;border-radius:26px}
+#opts{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+#resetBtn{font-size:14px}
+#confirmReset[hidden]{display:none}
+#confirmReset{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+#yesReset{background:#FF8A8A}
+#toast{position:absolute;left:50%;top:14%;transform:translate(-50%,-50%) scale(0);z-index:2;pointer-events:none;padding:8px 22px;font-size:clamp(22px,4.5vw,34px);white-space:nowrap;background:var(--go)}
+#toast.show{animation:pop 1.3s both}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(0) rotate(-8deg)}18%{transform:translate(-50%,-50%) scale(1.1) rotate(3deg)}28%,78%{transform:translate(-50%,-50%) scale(1) rotate(-2deg);opacity:1}100%{transform:translate(-50%,-50%) scale(.9);opacity:0}}
+@media (prefers-reduced-motion:reduce){#toast.show{animation:none;transform:translate(-50%,-50%) scale(1)}.bump{animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="info">
+    <h1>Dino Valley</h1>
+    <div id="coinBox" class="sticker stat" aria-live="polite" aria-label="Coins"><span class="ico">🪙</span><span id="coins">0</span></div>
+    <div id="dinoBox" class="sticker stat" aria-label="Dino friends"><span class="ico">🦕</span><span id="dinos">0</span></div>
+    <div class="sticker stat" aria-label="Town stars"><span class="ico">⭐</span><span id="stars">0</span></div>
+    <a id="homeBtn" href="index.html" class="sticker mini" aria-label="Back to all games">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M3.5 11.5L12 4l8.5 7.5" fill="none" stroke="#2C3A1E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9.5h4.5v-5h3v5H18V10" fill="none" stroke="#2C3A1E" stroke-width="2.6" stroke-linejoin="round"/></svg>
+    </a>
+    <button id="menuBtn" class="sticker mini" aria-label="Menu">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5" fill="#2C3A1E"/><rect x="14" y="4" width="5" height="16" rx="1.5" fill="#2C3A1E"/></svg>
+    </button>
+  </header>
+  <main id="stage">
+    <canvas id="board" aria-label="Your valley"></canvas>
+    <div id="toast" class="sticker" aria-hidden="true"></div>
+    <div id="overlay">
+      <div id="card" class="sticker">
+        <h2 id="cardTitle">Welcome to Dino Valley!</h2>
+        <p id="cardSub">Plant crops, sell the harvest, and build homes so new dino friends move in.</p>
+        <button id="playBtn" class="sticker">Play</button>
+        <div id="opts">
+          <button id="soundBtn" class="sticker mini" aria-pressed="true">Sound on</button>
+          <button id="resetBtn" class="sticker mini">Start a new valley</button>
+        </div>
+        <div id="confirmReset" hidden>
+          <span>Erase this valley?</span>
+          <button id="yesReset" class="sticker mini">Yes, start over</button>
+          <button id="noReset" class="sticker mini">Keep it</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <p id="tip">Tap a seed, then tap the grass to plant it.</p>
+  <nav id="shelf" aria-label="Things to plant and build"></nav>
+</div>
+<script>
+(function(){
+'use strict';
+var COLS=10,ROWS=7,INK='#2C3A1E';
+/* grow times are short on purpose: a 6 year old should see a carrot ripen while she watches */
+var ITEMS=[
+  {id:'carrot',name:'Carrot',emo:'🥕',cost:2,kind:'crop',grow:20,sell:5},
+  {id:'corn',name:'Corn',emo:'🌽',cost:5,kind:'crop',grow:40,sell:12},
+  {id:'berry',name:'Berries',emo:'🍓',cost:8,kind:'crop',grow:60,sell:20},
+  {id:'pumpkin',name:'Pumpkin',emo:'🎃',cost:15,kind:'crop',grow:90,sell:40},
+  {id:'house',name:'Dino Home',emo:'🏠',cost:30,kind:'build',stars:3},
+  {id:'bakery',name:'Bakery',emo:'🧁',cost:60,kind:'build',stars:4,make:45,give:20},
+  {id:'tree',name:'Tree',emo:'🌳',cost:6,kind:'build',stars:1},
+  {id:'flowers',name:'Flowers',emo:'🌷',cost:4,kind:'build',stars:1},
+  {id:'pond',name:'Pond',emo:'💧',cost:20,kind:'build',stars:2},
+  {id:'fountain',name:'Fountain',emo:'⛲',cost:50,kind:'build',stars:5},
+  {id:'shovel',name:'Clear',emo:'🧹',cost:0,kind:'tool'}
+];
+var BY={};ITEMS.forEach(function(it){BY[it.id]=it;});
+var DINO_COLS=['#FF7AB6','#5CC8FF','#FFB13D','#9B7BFF','#4FD98A','#FF6B5E','#FFD84D','#3DD6C8'];
+var NAMES=['Pip','Bloop','Ziggy','Mabel','Tumble','Rex','Pebble','Sunny','Dot','Waffle','Noodle','Bean','Juniper','Taco','Mochi','Fizz'];
+function $(id){return document.getElementById(id);}
+var cv=$('board'),ctx=cv.getContext('2d'),stage=$('stage'),overlay=$('overlay'),toastEl=$('toast');
+var reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var G,sel='carrot',ts=60,clock=0,last=0,particles=[],floaters=[],sound=true,playing=false;
+
+/* ---------- save data ---------- */
+function freshValley(){
+  var g={coins:20,tiles:[],dinos:[],named:0};
+  for(var y=0;y<ROWS;y++){g.tiles.push([]);for(var x=0;x<COLS;x++)g.tiles[y].push(null);}
+  var now=Date.now();
+  g.tiles[1][1]={t:'house'};
+  [[3,4],[4,4],[5,4]].forEach(function(p,i){g.tiles[p[1]][p[0]]={t:'carrot',at:now-(15+i*2)*1000};});
+  g.tiles[1][7]={t:'tree'};g.tiles[5][8]={t:'flowers'};
+  return g;
+}
+function save(){try{localStorage.setItem('dinoValley',JSON.stringify({coins:G.coins,tiles:G.tiles,named:G.named,dinos:G.dinos.map(function(d){return {name:d.name,col:d.col,home:d.home};}),sound:sound}));}catch(e){}}
+function load(){
+  try{
+    var s=JSON.parse(localStorage.getItem('dinoValley')||'null');
+    if(s&&Array.isArray(s.tiles)&&s.tiles.length===ROWS){
+      G={coins:s.coins|0,tiles:s.tiles,named:s.named|0,dinos:[]};
+      if(typeof s.sound==='boolean')sound=s.sound;
+      (s.dinos||[]).forEach(function(d){addDino(d.home,d.name,d.col);});
+      syncDinos();return;
+    }
+  }catch(e){}
+  G=freshValley();syncDinos();
+}
+/* every home has one dino living in it */
+function homes(){var h=[];G.tiles.forEach(function(r,y){r.forEach(function(c,x){if(c&&c.t==='house')h.push(x+','+y);});});return h;}
+function addDino(home,name,col){
+  var p=home.split(',').map(Number);
+  var d={home:home,name:name||NAMES[G.named%NAMES.length],col:col||DINO_COLS[G.named%DINO_COLS.length],x:p[0]+.5,y:p[1]+1,tx:p[0]+.5,ty:p[1]+1,wait:Math.random()*2,face:1,hop:0,heart:0,step:0,talk:0};
+  if(!name)G.named++;
+  G.dinos.push(d);return d;
+}
+function syncDinos(){
+  var h=homes();
+  G.dinos=G.dinos.filter(function(d){return h.indexOf(d.home)>=0;});
+  h.forEach(function(k){if(!G.dinos.some(function(d){return d.home===k;})){var d=addDino(k);if(playing){toast(d.name+' moved in!');sfx.yay();}}});
+}
+function stars(){var s=0;G.tiles.forEach(function(r){r.forEach(function(c){if(c&&BY[c.t].stars)s+=BY[c.t].stars;});});return s;}
+
+/* ---------- actions ---------- */
+function ripe(c,now){var it=BY[c.t];return it.kind==='crop'&&(now-c.at)/1000>=it.grow;}
+function tapTile(x,y,px,py){
+  var c=G.tiles[y][x],now=Date.now(),it=BY[sel];
+  /* tapping a dino gives it a hug */
+  for(var i=0;i<G.dinos.length;i++){var d=G.dinos[i];if(Math.abs(px-d.x)<.45&&py>d.y-1.1&&py<d.y+.1){d.heart=1.4;d.hop=.4;d.talk=2;sfx.hug();return;}}
+  if(c){
+    var ci=BY[c.t];
+    if(ci.kind==='crop'&&ripe(c,now)){
+      G.tiles[y][x]=null;earn(ci.sell,x,y);burst(x,y,'#FFD84D');sfx.harvest();
+      if(Math.random()<.3)toast(['Yum!','Great harvest!','Nice!','Crunchy!'][Math.floor(Math.random()*4)]);
+      save();refresh();return;
+    }
+    if(ci.id==='bakery'&&c.at&&(now-c.at)/1000>=ci.make){c.at=now;earn(ci.give,x,y);sfx.harvest();toast('Fresh cupcakes!');save();refresh();return;}
+    if(sel==='shovel'){
+      if(c.t==='house'&&homes().length<=1){toast('Keep one home for your dino!');sfx.nope();return;}
+      G.tiles[y][x]=null;burst(x,y,'#FFFFFF');sfx.pop();syncDinos();save();refresh();return;
+    }
+    if(ci.kind==='crop'){var left=Math.ceil(ci.grow-(now-c.at)/1000);floatText(x,y,left+'s to go','#2C3A1E');sfx.nope();return;}
+    sfx.nope();return;
+  }
+  if(sel==='shovel'){sfx.nope();return;}
+  if(G.coins<it.cost){toast('Need '+(it.cost-G.coins)+' more coins');sfx.nope();return;}
+  G.coins-=it.cost;
+  G.tiles[y][x]=it.kind==='crop'?{t:it.id,at:now}:(it.id==='bakery'?{t:it.id,at:now}:{t:it.id});
+  floatText(x,y,'-'+it.cost,'#B5232F');burst(x,y,it.kind==='crop'?'#A8703F':'#FFFFFF');
+  sfx.place();
+  if(it.id==='house')syncDinos();
+  save();refresh();
+}
+function earn(n,x,y){G.coins+=n;floatText(x,y,'+'+n,'#1E7A2E');var b=$('coinBox');b.classList.remove('bump');void b.offsetWidth;b.classList.add('bump');}
+function burst(x,y,col){
+  if(reduceMotion)return;
+  for(var i=0;i<10;i++)particles.push({x:x+.5,y:y+.5,vx:(Math.random()-.5)*5,vy:-Math.random()*4-1,life:.6+Math.random()*.4,col:col,s:.1+Math.random()*.1});
+}
+function floatText(x,y,txt,col){floaters.push({x:x+.5,y:y+.3,txt:txt,col:col,life:1.2});}
+
+/* ---------- dinos wander around ---------- */
+function walkable(x,y){
+  if(x<0||y<0||x>=COLS||y>=ROWS)return false;
+  var c=G.tiles[y][x];return !c||c.t==='flowers';
+}
+function updateDinos(dt){
+  G.dinos.forEach(function(d){
+    if(d.heart>0)d.heart-=dt;if(d.hop>0)d.hop-=dt;if(d.talk>0)d.talk-=dt;
+    var dx=d.tx-d.x,dy=d.ty-d.y,dist=Math.hypot(dx,dy);
+    if(dist>.02){
+      var sp=Math.min(dist,1.1*dt);d.x+=dx/dist*sp;d.y+=dy/dist*sp;d.step+=dt*10;if(Math.abs(dx)>.01)d.face=dx>0?1:-1;
+    }else{
+      d.wait-=dt;
+      if(d.wait<=0){
+        d.wait=1+Math.random()*3;
+        var cx=Math.floor(d.x),cy=Math.floor(d.y-.01),opts=[];
+        [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(o){if(walkable(cx+o[0],cy+o[1]))opts.push(o);});
+        if(opts.length){var o=opts[Math.floor(Math.random()*opts.length)];d.tx=cx+o[0]+.5;d.ty=cy+o[1]+.9;}
+      }
+    }
+  });
+}
+
+/* ---------- drawing ---------- */
+function ell(x,y,rx,ry){ctx.beginPath();ctx.ellipse(x,y,Math.max(.001,rx),Math.max(.001,ry),0,0,Math.PI*2);}
+function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function emoji(e,x,y,size){ctx.font=Math.round(size*ts)+'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.save();ctx.scale(1/ts,1/ts);ctx.fillText(e,x*ts,y*ts);ctx.restore();}
+function draw(){
+  var dpr=window.devicePixelRatio||1,now=Date.now(),x,y;
+  ctx.setTransform(dpr*ts,0,0,dpr*ts,0,0);
+  for(y=0;y<ROWS;y++)for(x=0;x<COLS;x++){ctx.fillStyle=(x+y)%2?'#7FCB5E':'#8BD46A';ctx.fillRect(x,y,1.01,1.01);}
+  ctx.fillStyle='#9ADD7A';for(y=0;y<ROWS;y++)for(x=0;x<COLS;x++){if((x*7+y*3)%5===0){ell(x+.3,y+.7,.05,.03);ctx.fill();ell(x+.75,y+.3,.04,.025);ctx.fill();}}
+  /* things sorted top to bottom so lower rows overlap upper ones */
+  var draws=[];
+  for(y=0;y<ROWS;y++)for(x=0;x<COLS;x++){var c=G.tiles[y][x];if(c)draws.push({y:y+.95,f:drawTile.bind(null,c,x,y,now)});}
+  G.dinos.forEach(function(d){draws.push({y:d.y,f:drawDino.bind(null,d)});});
+  draws.sort(function(a,b){return a.y-b.y;}).forEach(function(o){o.f();});
+  particles.forEach(function(q){ctx.globalAlpha=Math.min(1,q.life*2.5);ctx.fillStyle=q.col;ctx.fillRect(q.x-q.s/2,q.y-q.s/2,q.s,q.s);});
+  ctx.globalAlpha=1;
+  floaters.forEach(function(f){
+    ctx.globalAlpha=Math.min(1,f.life*2);ctx.font='700 '+Math.round(.36*ts)+'px Fredoka,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.save();ctx.scale(1/ts,1/ts);ctx.lineWidth=5;ctx.strokeStyle='#FFFCEF';ctx.strokeText(f.txt,f.x*ts,f.y*ts);ctx.fillStyle=f.col;ctx.fillText(f.txt,f.x*ts,f.y*ts);ctx.restore();
+  });
+  ctx.globalAlpha=1;
+}
+function drawTile(c,x,y,now){
+  var it=BY[c.t],cx=x+.5;
+  ctx.strokeStyle=INK;ctx.lineWidth=.05;ctx.lineJoin='round';
+  if(it.kind==='crop'){
+    ctx.fillStyle='#A8703F';rrect(x+.08,y+.12,.84,.8,.14);ctx.fill();ctx.stroke();
+    ctx.strokeStyle='#8A5A33';ctx.lineWidth=.035;for(var k=0;k<3;k++){ctx.beginPath();ctx.moveTo(x+.18,y+.3+k*.22);ctx.lineTo(x+.82,y+.3+k*.22);ctx.stroke();}
+    var p=Math.min(1,(now-c.at)/1000/it.grow);
+    if(p>=1){
+      var b=Math.abs(Math.sin(clock*4+x+y))*.06;
+      ctx.fillStyle='rgba(255,236,120,.55)';ell(cx,y+.5,.42,.38);ctx.fill();
+      emoji(it.emo,cx,y+.48-b,.62);
+      if(Math.floor(clock*2+x)%4===0){ctx.fillStyle='#fff';star(x+.84,y+.18,.08);ctx.fill();}
+    }else if(p<.4){
+      ctx.strokeStyle='#3DBE6C';ctx.lineWidth=.06;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(cx,y+.68);ctx.lineTo(cx,y+.55);ctx.stroke();
+      ctx.fillStyle='#4FD98A';ell(cx-.07,y+.52,.07,.04);ctx.fill();ell(cx+.07,y+.52,.07,.04);ctx.fill();
+    }else{
+      ctx.strokeStyle='#3DBE6C';ctx.lineWidth=.07;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(cx,y+.72);ctx.lineTo(cx,y+.4);ctx.stroke();
+      ctx.fillStyle='#4FD98A';ell(cx-.13,y+.45,.13,.06);ctx.fill();ell(cx+.13,y+.38,.13,.06);ctx.fill();ell(cx,y+.32,.07,.1);ctx.fill();
+    }
+    /* growth bar */
+    if(p<1){ctx.fillStyle='rgba(0,0,0,.25)';rrect(x+.18,y+.82,.64,.08,.04);ctx.fill();ctx.fillStyle='#FFD84D';rrect(x+.18,y+.82,.64*p,.08,.04);ctx.fill();}
+    return;
+  }
+  if(c.t==='house'){
+    var d=G.dinos.find(function(o){return o.home===x+','+y;});
+    var col=d?d.col:'#FF7AB6';
+    ctx.fillStyle='rgba(0,0,0,.15)';ell(cx,y+.9,.42,.08);ctx.fill();
+    ctx.fillStyle='#FFF1D6';rrect(x+.16,y+.42,.68,.48,.06);ctx.fill();ctx.stroke();
+    ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x+.06,y+.46);ctx.lineTo(cx,y+.06);ctx.lineTo(x+.94,y+.46);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.4)';ell(cx-.12,y+.3,.06,.04);ctx.fill();ell(cx+.12,y+.3,.06,.04);ctx.fill();
+    ctx.fillStyle='#A8703F';rrect(cx-.1,y+.6,.2,.3,.08);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#8FD3FF';rrect(x+.22,y+.52,.14,.12,.03);ctx.fill();ctx.stroke();rrect(x+.64,y+.52,.14,.12,.03);ctx.fill();ctx.stroke();
+  }else if(c.t==='bakery'){
+    var ready=(Date.now()-c.at)/1000>=it.make;
+    ctx.fillStyle='rgba(0,0,0,.15)';ell(cx,y+.9,.44,.08);ctx.fill();
+    ctx.fillStyle='#FFE3EF';rrect(x+.1,y+.38,.8,.52,.08);ctx.fill();ctx.stroke();
+    for(var s=0;s<4;s++){ctx.fillStyle=s%2?'#FFFFFF':'#FF7AB6';ctx.beginPath();ctx.moveTo(x+.06+s*.22,y+.38);ctx.lineTo(x+.28+s*.22,y+.38);ctx.lineTo(x+.28+s*.22,y+.48);ctx.arc(x+.17+s*.22,y+.48,.11,0,Math.PI);ctx.closePath();ctx.fill();}
+    ctx.strokeStyle=INK;rrect(x+.06,y+.3,.88,.1,.04);ctx.fillStyle='#FF7AB6';ctx.fill();ctx.stroke();
+    ctx.fillStyle='#A8703F';rrect(cx-.1,y+.62,.2,.28,.06);ctx.fill();ctx.stroke();
+    if(ready){var bb=Math.abs(Math.sin(clock*4))*.06;ctx.fillStyle='#FFFCEF';ell(cx+.22,y+.06-bb,.2,.16);ctx.fill();ctx.stroke();emoji('🧁',cx+.22,y+.06-bb,.26);}
+    else{var pr=(Date.now()-c.at)/1000/it.make;ctx.fillStyle='rgba(0,0,0,.25)';rrect(x+.18,y+.14,.64,.08,.04);ctx.fill();ctx.fillStyle='#FF7AB6';rrect(x+.18,y+.14,.64*pr,.08,.04);ctx.fill();}
+  }else if(c.t==='pond'){
+    ctx.fillStyle='#5CC8FF';ell(cx,y+.58,.42,.3);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#9BE4FF';ell(cx-.12,y+.5,.12,.06);ctx.fill();
+    ctx.fillStyle='#4FD98A';ell(cx+.16,y+.64,.1,.06);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=.03;ctx.beginPath();ctx.arc(cx,y+.6,.12+((clock*.3)%.2),0,Math.PI*2);ctx.stroke();
+  }else if(c.t==='fountain'){
+    ctx.fillStyle='rgba(0,0,0,.15)';ell(cx,y+.9,.42,.08);ctx.fill();
+    ctx.fillStyle='#C9D6E3';ell(cx,y+.72,.4,.18);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#5CC8FF';ell(cx,y+.7,.3,.11);ctx.fill();
+    ctx.fillStyle='#C9D6E3';rrect(cx-.06,y+.3,.12,.42,.04);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#9BE4FF';for(var w=0;w<6;w++){var a=w*Math.PI/3+clock*2;ell(cx+Math.cos(a)*.18,y+.32+Math.abs(Math.sin(clock*3+w))*.2,.035,.035);ctx.fill();}
+  }else{
+    emoji(it.emo,cx,y+.5,c.t==='tree'?.82:.6);
+  }
+}
+function star(x,y,r){ctx.beginPath();for(var i=0;i<10;i++){var rr=i%2?r*.45:r,an=-Math.PI/2+i*Math.PI/5;ctx[i?'lineTo':'moveTo'](x+Math.cos(an)*rr,y+Math.sin(an)*rr);}ctx.closePath();}
+/* an original round baby dino: big head, little spikes, stubby tail */
+function drawDino(d){
+  var x=d.x,y=d.y,hop=d.hop>0?Math.sin(d.hop/.4*Math.PI)*.18:0,walk=Math.sin(d.step)*.04;
+  ctx.save();ctx.translate(x,y-hop);ctx.scale(d.face,1);
+  ctx.strokeStyle=INK;ctx.lineWidth=.04;ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.fillStyle='rgba(0,0,0,.15)';ell(0,hop,.28,.07);ctx.fill();
+  var c=d.col;
+  ctx.fillStyle=c;
+  ctx.beginPath();ctx.moveTo(-.18,-.22);ctx.quadraticCurveTo(-.42,-.2,-.46,-.34+walk);ctx.quadraticCurveTo(-.34,-.12,-.12,-.1);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='#FFFFFF';ctx.globalAlpha=.0;ctx.globalAlpha=1;
+  ctx.fillStyle=c;rrect(-.14,-.12,.1,.12+walk,.04);ctx.fill();ctx.stroke();rrect(.06,-.12,.1,.12-walk,.04);ctx.fill();ctx.stroke();
+  ell(0,-.24,.22,.18);ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.45)';ell(.04,-.2,.12,.1);ctx.fill();
+  ctx.fillStyle='#FFD84D';
+  for(var s=0;s<4;s++){var sx=-.22+s*.12,sy=-.38-s*.06;ctx.beginPath();ctx.moveTo(sx-.05,sy+.05);ctx.lineTo(sx,sy-.06);ctx.lineTo(sx+.05,sy+.05);ctx.closePath();ctx.fill();ctx.stroke();}
+  ctx.fillStyle=c;ell(.14,-.52,.2,.18);ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.4)';ell(.22,-.48,.1,.08);ctx.fill();
+  ctx.fillStyle='#fff';ell(.18,-.56,.065,.075);ctx.fill();
+  ctx.fillStyle=INK;ell(.2,-.555,.035,.042);ctx.fill();
+  ctx.fillStyle='#fff';ell(.21,-.57,.012,.012);ctx.fill();
+  ctx.fillStyle='rgba(255,120,160,.55)';ell(.26,-.46,.05,.03);ctx.fill();
+  ctx.strokeStyle=INK;ctx.lineWidth=.03;ctx.beginPath();ctx.arc(.24,-.48,.06,Math.PI*.1,Math.PI*.7);ctx.stroke();
+  ctx.restore();
+  if(d.heart>0){ctx.globalAlpha=Math.min(1,d.heart);emoji('💖',x,y-.95-(1.4-d.heart)*.3,.32);ctx.globalAlpha=1;}
+  if(d.talk>0){
+    ctx.font='700 '+Math.round(.26*ts)+'px Fredoka,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.save();ctx.scale(1/ts,1/ts);var tx=x*ts,ty=(y-1.2)*ts;var w=ctx.measureText(d.name).width+16;
+    ctx.fillStyle='#FFFCEF';ctx.strokeStyle=INK;ctx.lineWidth=3;rrect((tx-w/2),ty-14,w,28,12);ctx.fill();ctx.stroke();
+    ctx.fillStyle=INK;ctx.fillText(d.name,tx,ty);ctx.restore();
+  }
+}
+function resize(){
+  var w=stage.clientWidth-14,h=stage.clientHeight-22;
+  ts=Math.max(20,Math.floor(Math.min(w/COLS,h/ROWS)));
+  var dpr=window.devicePixelRatio||1;
+  cv.style.width=COLS*ts+'px';cv.style.height=ROWS*ts+'px';
+  cv.width=COLS*ts*dpr;cv.height=ROWS*ts*dpr;
+  if(G)draw();
+}
+
+/* ---------- shelf ---------- */
+function buildShelf(){
+  var h='';
+  ITEMS.forEach(function(it){
+    h+='<button class="sticker item" data-id="'+it.id+'" aria-pressed="false"><span class="emo">'+it.emo+'</span>'+it.name+
+      '<span class="price">'+(it.cost?'🪙 '+it.cost:'free')+'</span></button>';
+  });
+  $('shelf').innerHTML=h;
+  document.querySelectorAll('.item').forEach(function(b){b.addEventListener('click',function(){sel=b.dataset.id;refresh();sfx.pick();});});
+}
+function refresh(){
+  $('coins').textContent=G.coins;$('dinos').textContent=G.dinos.length;$('stars').textContent=stars();
+  document.querySelectorAll('.item').forEach(function(b){
+    var it=BY[b.dataset.id];b.setAttribute('aria-pressed',String(it.id===sel));b.classList.toggle('poor',G.coins<it.cost);
+  });
+  var it=BY[sel];
+  $('tip').textContent=it.kind==='crop'?'Tap the grass to plant '+it.name.toLowerCase()+'. Tap it again when it sparkles to sell it for '+it.sell+' coins.':
+    it.kind==='tool'?'Tap something to clear it away.':
+    it.id==='house'?'Tap the grass to build a home. A new dino friend will move in!':
+    it.id==='bakery'?'The bakery bakes cupcakes. Tap it when they are ready for '+it.give+' coins.':
+    'Tap the grass to place a '+it.name.toLowerCase()+'. It makes your town prettier!';
+}
+
+/* ---------- input ---------- */
+cv.addEventListener('pointerdown',function(e){
+  if(!playing)return;
+  var r=cv.getBoundingClientRect(),px=(e.clientX-r.left)/ts,py=(e.clientY-r.top)/ts;
+  var x=Math.floor(px),y=Math.floor(py);
+  if(x<0||y<0||x>=COLS||y>=ROWS)return;
+  tapTile(x,y,px,py);
+});
+document.addEventListener('gesturestart',function(e){e.preventDefault();});
+
+/* ---------- UI ---------- */
+var toastTimer=null;
+function toast(msg){toastEl.textContent=msg;toastEl.classList.remove('show');void toastEl.offsetWidth;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toastEl.classList.remove('show');},1350);}
+var ac=null;
+function initAudio(){try{if(!ac){var AC=window.AudioContext||window.webkitAudioContext;if(AC)ac=new AC();}if(ac&&ac.state==='suspended')ac.resume();}catch(e){ac=null;}}
+function tone(f,d,type,v,when,f2){
+  if(!ac||!sound)return;
+  try{var o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(when||0);o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.02);}catch(e){}
+}
+var sfx={
+  pick:function(){tone(620,.06,'triangle',.07);},
+  place:function(){tone(300,.1,'triangle',.11,0,520);},
+  harvest:function(){tone(784,.08,'triangle',.11);tone(1175,.14,'triangle',.11,.07);},
+  pop:function(){tone(500,.1,'sine',.1,0,200);},
+  nope:function(){tone(200,.1,'sine',.07);},
+  hug:function(){tone(520,.12,'sine',.1,0,880);tone(700,.14,'sine',.08,.1,1000);},
+  yay:function(){[523,659,784,1047].forEach(function(f,i){tone(f,.18,'triangle',.12,i*.09);});}
+};
+function syncSound(){$('soundBtn').textContent=sound?'Sound on':'Sound off';$('soundBtn').setAttribute('aria-pressed',String(sound));}
+function play(){initAudio();playing=true;overlay.hidden=true;$('confirmReset').hidden=true;last=performance.now();}
+function menu(){
+  playing=false;
+  $('cardTitle').textContent='Taking a break';$('cardSub').textContent='Your valley is saved. Crops keep growing while you are away!';
+  $('playBtn').textContent='Keep playing';overlay.hidden=false;
+}
+$('playBtn').addEventListener('click',play);
+$('menuBtn').addEventListener('click',menu);
+$('soundBtn').addEventListener('click',function(){sound=!sound;if(sound)initAudio();syncSound();save();});
+$('resetBtn').addEventListener('click',function(){$('confirmReset').hidden=false;});
+$('noReset').addEventListener('click',function(){$('confirmReset').hidden=true;});
+$('yesReset').addEventListener('click',function(){G=freshValley();syncDinos();save();refresh();$('confirmReset').hidden=true;toast('A brand new valley!');});
+document.addEventListener('visibilitychange',function(){if(document.hidden){save();if(playing)menu();}});
+
+function frame(t){
+  var dt=Math.min(1/30,(t-last)/1000);last=t;
+  if(dt>0){
+    clock+=dt;
+    updateDinos(dt);
+    particles.forEach(function(q){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=10*dt;q.life-=dt;});particles=particles.filter(function(q){return q.life>0;});
+    floaters.forEach(function(f){f.y-=dt*.6;f.life-=dt;});floaters=floaters.filter(function(f){return f.life>0;});
+  }
+  draw();requestAnimationFrame(frame);
+}
+load();buildShelf();syncSound();refresh();resize();
+if(G.coins!==20||homes().length>1){$('cardTitle').textContent='Welcome back!';$('cardSub').textContent='Your dino friends missed you. Your crops kept growing!';$('playBtn').textContent='Keep playing';}
+if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
+window.addEventListener('resize',resize);
+last=performance.now();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
