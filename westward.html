@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Westward 1848</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kid Games">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a 1980s school computer lab monitor. One glowing screen: a scene strip on top, a text log in the middle, numbered choices at the bottom. */
+:root{
+  --bg:#050A05;
+  --screen:#0B140B;
+  --phos:#7CFF7C;
+  --dim:#3E8F3E;
+  --warn:#FFD24A;
+  --bad:#FF6B5E;
+  --font:'VT323','Courier New',monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--phos);font-family:var(--font);font-size:22px;overflow:hidden;-webkit-user-select:none;user-select:none}
+#crt{height:100%;max-width:1000px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+#homeBtn{align-self:flex-start;font-family:var(--font);font-size:22px;color:var(--phos);text-decoration:none;border:2px solid var(--dim);border-radius:6px;padding:4px 12px}
+#homeBtn:hover,#homeBtn:focus-visible{background:var(--phos);color:var(--screen);outline:none}
+#monitor{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;background:var(--screen);border:3px solid #1E3A1E;border-radius:18px;padding:14px 16px;box-shadow:inset 0 0 60px rgba(124,255,124,.08),0 0 0 8px #141A14;position:relative;overflow:hidden}
+#monitor::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.18) 0 2px,transparent 2px 4px);border-radius:16px}
+#top{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:20px;color:var(--dim);border-bottom:2px dashed #1E3A1E;padding-bottom:6px}
+#top b{color:var(--phos);font-weight:400}
+#scene{width:100%;height:clamp(110px,22vh,190px);display:block;image-rendering:pixelated;border:2px solid #1E3A1E}
+#log{flex:1;min-height:0;overflow-y:auto;white-space:pre-wrap;line-height:1.12;text-shadow:0 0 6px rgba(124,255,124,.45);scrollbar-width:thin;scrollbar-color:var(--dim) transparent}
+#log .warn{color:var(--warn)}
+#log .bad{color:var(--bad)}
+#log .dim{color:var(--dim)}
+#choices{display:flex;flex-wrap:wrap;gap:8px}
+#choices button{font-family:var(--font);font-size:22px;color:var(--phos);background:transparent;border:2px solid var(--dim);border-radius:6px;padding:6px 12px;min-height:44px;cursor:pointer;text-align:left}
+#choices button:hover,#choices button:focus-visible{background:var(--phos);color:var(--screen);outline:none}
+#choices input{font-family:var(--font);font-size:24px;color:var(--phos);background:#081008;border:2px solid var(--dim);border-radius:6px;padding:6px 10px;min-height:44px;width:min(320px,70vw)}
+#choices input:focus{outline:2px solid var(--phos)}
+@media (prefers-reduced-motion:reduce){#log{text-shadow:none}}
+</style>
+</head>
+<body>
+<div id="crt">
+  <a id="homeBtn" href="index.html">&lt; All games</a>
+  <div id="monitor">
+    <div id="top"></div>
+    <canvas id="scene" width="320" height="80" aria-label="Your wagon on the trail"></canvas>
+    <div id="log" aria-live="polite"></div>
+    <div id="choices"></div>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+function $(id){return document.getElementById(id);}
+var logEl=$('log'),choicesEl=$('choices'),topEl=$('top'),cv=$('scene'),ctx=cv.getContext('2d');
+
+/* ---------- the trail ---------- */
+var STOPS=[
+  {name:'Independence, Missouri',mi:0,kind:'town'},
+  {name:'Kansas River crossing',mi:102,kind:'river',depth:[3,6],width:[600,700],ferry:5},
+  {name:'Big Blue River crossing',mi:185,kind:'river',depth:[2,4],width:[200,300]},
+  {name:'Fort Kearney',mi:304,kind:'fort'},
+  {name:'Chimney Rock',mi:554,kind:'mark',shape:'spire'},
+  {name:'Fort Laramie',mi:640,kind:'fort'},
+  {name:'Independence Rock',mi:830,kind:'mark',shape:'dome'},
+  {name:'South Pass',mi:932,kind:'mark',shape:'hills'},
+  {name:'Green River crossing',mi:989,kind:'river',depth:[8,20],width:[350,450],ferry:10},
+  {name:'Fort Bridger',mi:1051,kind:'fort'},
+  {name:'Soda Springs',mi:1213,kind:'mark',shape:'hills'},
+  {name:'Fort Hall',mi:1270,kind:'fort'},
+  {name:'Snake River crossing',mi:1452,kind:'river',depth:[5,10],width:[900,1100]},
+  {name:'Fort Boise',mi:1534,kind:'fort'},
+  {name:'Blue Mountains',mi:1694,kind:'mark',shape:'peaks'},
+  {name:'The Dalles',mi:1824,kind:'dalles'},
+  {name:'Willamette Valley, Oregon',mi:1930,kind:'end'}
+];
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var JOBS=[
+  {name:'a merchant from Philadelphia',cash:1500,mult:1},
+  {name:'a blacksmith from Kentucky',cash:900,mult:2,fix:true},
+  {name:'a homesteader from Iowa',cash:500,mult:3}
+];
+var PACE=[['easy',12,0],['hard',16,-1],['punishing',20,-3]];
+var RATIONS=[['full',3,1],['light',2,-1],['scraps',1,-3]];
+var ILLS=['a fever','dysentery','cholera','measles','typhoid','exhaustion','a bad cough'];
+var INJ=['a broken arm','a broken leg','a snakebite'];
+
+var G=null;
+function newGame(){
+  G={job:null,party:[],cash:0,oxen:0,food:0,clothes:0,ammo:0,wheel:0,axle:0,tongue:0,
+     day:1,month:3,year:1848,mi:0,stop:0,pace:0,ration:0,weather:'warm',stuck:false,lastMsg:'',over:false};
+}
+
+/* ---------- screen helpers ---------- */
+var typing=false;
+function cls(){logEl.innerHTML='';}
+function say(text,cls2){var d=document.createElement('div');if(cls2)d.className=cls2;d.textContent=text;logEl.appendChild(d);logEl.scrollTop=logEl.scrollHeight;}
+function gap(){say(' ');}
+function choose(opts){
+  choicesEl.innerHTML='';
+  opts.forEach(function(o,i){
+    var b=document.createElement('button');b.textContent=(i+1)+'. '+o[0];b.addEventListener('click',function(){beep(660,.04);o[1]();});choicesEl.appendChild(b);
+  });
+  var f=choicesEl.querySelector('button');if(f&&window.matchMedia('(hover:hover)').matches)f.focus();
+}
+function ask(prompt,cb,def){
+  choicesEl.innerHTML='';
+  var i=document.createElement('input');i.id='answer';i.setAttribute('aria-label',prompt);i.placeholder=prompt;i.maxLength=14;if(def)i.value=def;
+  var b=document.createElement('button');b.textContent='OK';
+  function go(){var v=i.value.trim()||def||'';if(!v)return;beep(660,.04);cb(v);}
+  b.addEventListener('click',go);i.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+  choicesEl.appendChild(i);choicesEl.appendChild(b);setTimeout(function(){i.focus();},30);
+}
+function askNum(prompt,max,cb){
+  choicesEl.innerHTML='';
+  var i=document.createElement('input');i.id='answer';i.type='number';i.inputMode='numeric';i.min=0;i.max=max;i.placeholder=prompt;i.setAttribute('aria-label',prompt);
+  var b=document.createElement('button');b.textContent='OK';
+  function go(){var v=Math.max(0,Math.min(max,Math.floor(+i.value||0)));beep(660,.04);cb(v);}
+  b.addEventListener('click',go);i.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+  choicesEl.appendChild(i);choicesEl.appendChild(b);setTimeout(function(){i.focus();},30);
+}
+document.addEventListener('keydown',function(e){
+  if(document.activeElement&&document.activeElement.tagName==='INPUT')return;
+  var n=parseInt(e.key,10);if(n>=1&&n<=9){var b=choicesEl.querySelectorAll('button')[n-1];if(b)b.click();}
+  else if(e.key==='Enter'||e.key===' '){var only=choicesEl.querySelectorAll('button');if(only.length===1){e.preventDefault();only[0].click();}}
+});
+function alive(){return G.party.filter(function(p){return p.hp>0;});}
+function dateStr(){return MONTHS[G.month]+' '+G.day+', '+G.year;}
+function money(n){return '$'+n.toFixed(2);}
+function healthWord(){
+  var a=alive();if(!a.length)return 'none';
+  var avg=a.reduce(function(s,p){return s+p.hp;},0)/a.length;
+  return avg>75?'good':avg>50?'fair':avg>25?'poor':'very poor';
+}
+function nextStop(){return STOPS[G.stop+1];}
+function status(){
+  if(!G||!G.party.length){topEl.innerHTML='<span>WESTWARD 1848</span>';return;}
+  var ns=nextStop();
+  topEl.innerHTML='<span>Date: <b>'+dateStr()+'</b></span><span>Weather: <b>'+G.weather+'</b></span><span>Health: <b>'+healthWord()+'</b></span>'+
+    '<span>Food: <b>'+Math.floor(G.food)+' lbs</b></span><span>Next: <b>'+(ns?Math.max(0,ns.mi-G.mi)+' mi':'-')+'</b></span><span>Traveled: <b>'+G.mi+' mi</b></span>';
+}
+
+/* ---------- sound: a little PC speaker beep ---------- */
+var ac=null;
+function beep(f,d){try{if(!ac){var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ac=new AC();}if(ac.state==='suspended')ac.resume();var o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=f;g.gain.value=.03;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}catch(e){}}
+
+/* ---------- the scene strip ---------- */
+var sceneT=0,rolling=false,landmark=null;
+function drawScene(){
+  var W=320,H=80,x;
+  ctx.fillStyle='#0B140B';ctx.fillRect(0,0,W,H);
+  var snow=G&&/snow/.test(G.weather);
+  ctx.fillStyle='#173017';for(x=0;x<W;x+=1){var h=8+Math.sin((x+sceneT*.3)*.05)*4+Math.sin((x+sceneT*.3)*.13)*2;ctx.fillRect(x,50-h,1,h);}
+  if(landmark){
+    ctx.fillStyle='#2C5C2C';
+    var lx=230;
+    if(landmark==='spire'){ctx.fillRect(lx,18,6,32);ctx.fillRect(lx-10,38,26,12);ctx.fillRect(lx-4,30,14,10);}
+    else if(landmark==='dome'){ctx.beginPath();ctx.ellipse(lx,50,40,18,0,Math.PI,0);ctx.fill();}
+    else if(landmark==='peaks'){for(var k=0;k<3;k++){ctx.beginPath();ctx.moveTo(lx-50+k*36,50);ctx.lineTo(lx-30+k*36,14+k*4);ctx.lineTo(lx-10+k*36,50);ctx.fill();}}
+    else if(landmark==='hills'){ctx.beginPath();ctx.ellipse(lx-20,50,40,14,0,Math.PI,0);ctx.fill();ctx.beginPath();ctx.ellipse(lx+30,50,30,10,0,Math.PI,0);ctx.fill();}
+    else if(landmark==='fort'){ctx.fillRect(lx-30,30,60,20);for(var p=0;p<8;p++)ctx.fillRect(lx-30+p*8,26,5,5);ctx.fillRect(lx-36,20,10,30);ctx.fillRect(lx+26,20,10,30);}
+    else if(landmark==='river'){ctx.fillStyle='#1E5A7A';ctx.fillRect(200,50,120,30);}
+    else if(landmark==='town'){for(var q=0;q<4;q++){ctx.fillRect(lx-50+q*26,32,20,18);ctx.beginPath();ctx.moveTo(lx-52+q*26,32);ctx.lineTo(lx-40+q*26,24);ctx.lineTo(lx-28+q*26,32);ctx.fill();}}
+  }
+  ctx.fillStyle='#3E8F3E';ctx.fillRect(0,50,landmark==='river'?200:W,30);
+  ctx.fillStyle='#2E6E2E';for(x=0;x<W;x+=7){var gx=(x*13+Math.floor(sceneT*1.5))%W;ctx.fillRect(gx,56+(x*7)%20,2,1);}
+  /* the wagon, oxen, and a dusty road */
+  var bob=rolling?(Math.floor(sceneT/4)%2):0,wx=110;
+  ctx.fillStyle='#7CFF7C';
+  ctx.fillRect(wx+44,52-bob,18,8);ctx.fillRect(wx+60,50-bob,5,5);ctx.fillRect(wx+68,52+bob,18,8);ctx.fillRect(wx+84,50+bob,5,5);
+  ctx.fillStyle='#7CFF7C';ctx.fillRect(wx,52,40,8);
+  ctx.fillStyle='#CFFFCF';ctx.beginPath();ctx.moveTo(wx,52);ctx.quadraticCurveTo(wx+20,26,wx+40,52);ctx.fill();
+  ctx.fillStyle='#0B140B';ctx.fillRect(wx+40,56,6,1);
+  var r=rolling?(sceneT*.2):0;
+  [wx+6,wx+32].forEach(function(cx){ctx.strokeStyle='#7CFF7C';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,64,6,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(cx+Math.cos(r)*6,64+Math.sin(r)*6);ctx.lineTo(cx-Math.cos(r)*6,64-Math.sin(r)*6);ctx.stroke();});
+  if(snow){ctx.fillStyle='#CFFFCF';for(x=0;x<40;x++)ctx.fillRect((x*37+sceneT*.4)%W,(x*23+sceneT*.8)%H,1,1);}
+  if(G&&/rain/.test(G.weather)){ctx.fillStyle='#4FA0C0';for(x=0;x<50;x++)ctx.fillRect((x*31+sceneT*.3)%W,(x*17+sceneT*3)%H,1,3);}
+}
+function animate(){sceneT+=rolling?2:.2;drawScene();requestAnimationFrame(animate);}
+
+/* ---------- opening ---------- */
+function title(){
+  newGame();status();cls();landmark='town';
+  say('W E S T W A R D   1 8 4 8');
+  say('-------------------------','dim');
+  say('It is spring in Independence, Missouri. Two thousand miles of prairie, river and mountain lie between you and the green valleys of Oregon.');
+  gap();say('You will need oxen, food, clothing, bullets, spare parts, good judgment and a little luck.');
+  gap();say('Type a number or tap a choice.','dim');
+  choose([['Travel the trail',chooseJob],['Learn about the trail',about]]);
+}
+function about(){
+  cls();
+  say('HOW THE TRAIL WORKS');gap();
+  say('Each day your wagon covers ground depending on your pace, your oxen, the weather and the land.');
+  say('Your party eats food every day. Bigger rations keep people healthy. Faster paces wear them down.');
+  say('Cold weather is dangerous without warm clothing. Rest helps the sick recover.');
+  say('Rivers must be crossed. Shallow water can be forded, deeper water floated or ferried.');
+  say('Forts sell supplies, but prices climb the farther west you go.');
+  say('Homesteaders start poor but earn the most points for arriving. Blacksmiths are better at repairs.');
+  choose([['Back',title]]);
+}
+function chooseJob(){
+  cls();say('Many kinds of people made the trip. You are:');gap();
+  JOBS.forEach(function(j,i){say((i+1)+'. '+j.name+' (starts with '+money(j.cash)+')');});
+  choose(JOBS.map(function(j){return [j.name.replace(/^a /,'').replace(/^./,function(c){return c.toUpperCase();}),function(){G.job=j;G.cash=j.cash;names();}];}));
+}
+function names(){
+  cls();say('What is the name of the wagon leader?');
+  ask('Leader name',function(n){
+    G.party.push({name:n,hp:100,ill:null,days:0});
+    var i=1;
+    (function more(){
+      if(i>4){pickMonth();return;}
+      cls();say('Leader: '+n);G.party.slice(1).forEach(function(p){say('Traveler: '+p.name);});gap();say('Name traveler '+i+' of 4:');
+      ask('Traveler name',function(m){G.party.push({name:m,hp:100,ill:null,days:0});i++;more();},['Mary','Jed','Sarah','Tom'][i-1]);
+    })();
+  });
+}
+function pickMonth(){
+  cls();say('When will you leave Independence?');gap();
+  say('Leave too early and the grass is thin and the rivers high. Leave too late and the mountains will be full of snow.','dim');
+  choose([['March',function(){G.month=2;store(true);}],['April',function(){G.month=3;store(true);}],['May',function(){G.month=4;store(true);}],['June',function(){G.month=5;store(true);}],['July',function(){G.month=6;store(true);}]]);
+}
+
+/* ---------- the general store ---------- */
+var BASE={oxen:40,food:.2,clothes:10,ammo:2,wheel:10,axle:10,tongue:10};
+function priceMult(){return 1+G.stop*.25;}
+function store(first){
+  var m=priceMult();
+  var items=[
+    ['Oxen (yoke of 2)','oxen',BASE.oxen*m,2,'Each yoke is two oxen.'],
+    ['Food (pounds)','food',BASE.food*m,1,'About 200 lbs per person to start.'],
+    ['Clothing (sets)','clothes',BASE.clothes*m,1,'Two sets per person for the cold.'],
+    ['Bullets (box of 20)','ammo',BASE.ammo*m,20,'For hunting along the way.'],
+    ['Wagon wheels','wheel',BASE.wheel*m,1,''],
+    ['Wagon axles','axle',BASE.axle*m,1,''],
+    ['Wagon tongues','tongue',BASE.tongue*m,1,'']
+  ];
+  cls();status();
+  say(first?'OUTFITTER\'S STORE, INDEPENDENCE':'TRADING POST AT '+STOPS[G.stop].name.toUpperCase());
+  say(dateStr(),'dim');gap();
+  items.forEach(function(it,i){say((i+1)+'. '+it[0]+'  '+money(it[2])+' each   (have '+(it[1]==='oxen'?G.oxen:Math.floor(G[it[1]]))+')');});
+  gap();say('Cash: '+money(G.cash));
+  if(first){gap();say('Advice: at least 6 oxen, 1000 lbs of food, 2 sets of clothing each, and a spare or two of each part.','dim');}
+  var opts=items.map(function(it){return [it[0].replace(/ \(.*/,''),function(){buy(it,first);}];});
+  opts.push([first?'Leave for Oregon':'Leave the store',function(){
+    if(first&&G.oxen<2){say('You cannot pull a wagon without oxen!','bad');return;}
+    if(first){cls();say('You hitch up the oxen and roll out of Independence.');gap();landmark=null;travelMenu();}else stopMenu();
+  }]);
+  choose(opts);
+}
+function buy(it,first){
+  var max=Math.floor(G.cash/it[2]);
+  cls();say(it[0]+': '+money(it[2])+' each. '+it[4]);say('You can afford '+max+'.');
+  askNum('How many?',max,function(n){
+    var cost=n*it[2];G.cash-=cost;G[it[1]]+=it[1]==='oxen'?n*2:n*it[3];
+    if(n)beep(880,.05);store(first);
+  });
+}
+
+/* ---------- travel ---------- */
+var timer=null;
+function travelMenu(){
+  rolling=false;status();
+  var here=STOPS[G.stop];
+  choose([
+    ['Continue on the trail',startRolling],
+    ['Check supplies',supplies],
+    ['Look at the map',map],
+    ['Change pace ('+PACE[G.pace][0]+')',changePace],
+    ['Change rations ('+RATIONS[G.ration][0]+')',changeRations],
+    ['Stop to rest',rest],
+    ['Attempt to trade',trade],
+    ['Go hunting',hunt]
+  ].concat(here&&here.kind==='fort'&&G.mi===here.mi?[['Buy supplies',function(){store(false);}]]:[]));
+}
+function stopMenu(){cls();say('You are at '+STOPS[G.stop].name+'.');say(dateStr(),'dim');travelMenu();}
+function startRolling(){
+  if(G.oxen<1){say('You have no oxen to pull the wagon. You must trade for some.','bad');return;}
+  if(G.stuck){repairWagon();return;}
+  cls();rolling=true;landmark=null;
+  choicesEl.innerHTML='';
+  var b=document.createElement('button');b.textContent='1. Stop and look around';b.addEventListener('click',function(){halt();cls();say('You stop the wagon.');travelMenu();});choicesEl.appendChild(b);
+  say('Rolling west... ('+PACE[G.pace][0]+' pace, '+RATIONS[G.ration][0]+' rations)','dim');
+  timer=setInterval(oneDay,650);
+}
+function halt(){clearInterval(timer);timer=null;rolling=false;}
+function advanceDate(){
+  G.day++;
+  var dim=[31,28,31,30,31,30,31,31,30,31,30,31][G.month];
+  if(G.day>dim){G.day=1;G.month++;if(G.month>11){G.month=0;G.year++;}}
+}
+function setWeather(){
+  var m=G.month,mt=G.mi>800&&G.mi<1100||G.mi>1650,r=Math.random();
+  var base=m<=1||m===11?'very cold':m===2||m===10?'cold':m===3||m===9?'cool':m===4||m===8?'warm':'hot';
+  if(mt&&base==='cool')base='cold';if(mt&&base==='cold')base='very cold';
+  if(r<.12)G.weather=(base==='very cold'||base==='cold')?'snow':'rain';
+  else if(r<.17&&(base==='very cold'))G.weather='heavy snow';
+  else G.weather=base;
+}
+function dayHealth(rest){
+  var a=alive(),cold=/cold|snow/.test(G.weather),needClothes=a.length*2;
+  a.forEach(function(p){
+    var d=0;
+    if(!rest)d+=PACE[G.pace][2];
+    d+=G.food>0?RATIONS[G.ration][2]:-6;
+    if(cold&&G.clothes<needClothes)d-=G.weather==='very cold'||/snow/.test(G.weather)?3:1;
+    if(G.weather==='hot')d-=.5;
+    if(rest)d+=3;
+    if(p.ill){d-=4;p.days++;if(Math.random()<(rest?.22:.09)||p.days>14){say(p.name+' is well again.','dim');p.ill=null;p.days=0;}}
+    else if(Math.random()<.012+(100-p.hp)/6000+(G.food<=0?.02:0)){p.ill=Math.random()<.75?ILLS[Math.floor(Math.random()*ILLS.length)]:INJ[Math.floor(Math.random()*INJ.length)];p.days=0;say(p.name+' has '+p.ill+'.','warn');beep(330,.15);}
+    p.hp=Math.max(0,Math.min(100,p.hp+d));
+    if(p.hp<=0){say(p.name+' has died'+(p.ill?' of '+p.ill.replace(/^a /,''):'')+'.','bad');beep(160,.5);}
+  });
+  var eaters=alive().length;
+  G.food=Math.max(0,G.food-eaters*RATIONS[G.ration][1]);
+}
+function oneDay(){
+  advanceDate();setWeather();
+  var ns=nextStop(),oxF=Math.min(1,G.oxen/6)*.6+.4,wF=G.weather==='heavy snow'?.25:/snow/.test(G.weather)?.5:G.weather==='rain'?.8:1;
+  var land=G.mi>800&&G.mi<1100||G.mi>1650?.75:1;
+  var miles=Math.max(1,Math.round(PACE[G.pace][1]*oxF*wF*land*(G.oxen>=2?1:.5)));
+  if(G.mi+miles>=ns.mi){miles=ns.mi-G.mi;}
+  G.mi+=miles;
+  dayHealth(false);
+  status();
+  if(!alive().length){halt();allDead();return;}
+  if(G.food<=0&&Math.random()<.3)say('You have no food! Your party is starving.','bad');
+  if(G.mi>=ns.mi){halt();G.stop++;arrive(STOPS[G.stop]);return;}
+  if(Math.random()<.085){halt();randomEvent();}
+}
+
+/* ---------- things that happen on the trail ---------- */
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function randomEvent(){
+  var a=alive(),who=pick(a),r=Math.random();
+  cls();
+  if(r<.12&&G.oxen>0){G.oxen--;say('One of your oxen has wandered off in the night and cannot be found.','warn');}
+  else if(r<.22){
+    var part=pick(['wheel','axle','tongue']);
+    say('A wagon '+part+' has broken!','warn');
+    if(G[part]>0){G[part]--;say('You replace it with a spare.');}
+    else{G.stuck=part;say('You have no spare '+part+'. You will have to try to repair it.','bad');}
+  }
+  else if(r<.3){var lost=Math.min(G.food,Math.floor(20+Math.random()*60)),ammo=Math.min(G.ammo,20);G.food-=lost;G.ammo-=ammo;say('A thief comes in the night and steals '+lost+' lbs of food'+(ammo?' and '+ammo+' bullets':'')+'.','warn');}
+  else if(r<.4){var f=Math.floor(15+Math.random()*30);G.food+=f;say('You find wild berries along the trail. +'+f+' lbs of food.');}
+  else if(r<.48){a.forEach(function(p){p.hp=Math.max(1,p.hp-8);});say('Bad water. Everyone feels sick to their stomach.','warn');}
+  else if(r<.56){var lostDays=1+Math.floor(Math.random()*3);for(var i=0;i<lostDays;i++){advanceDate();dayHealth(true);}say('Heavy fog. You lose '+lostDays+' day'+(lostDays>1?'s':'')+' waiting for it to lift.','warn');}
+  else if(r<.62){var d2=2+Math.floor(Math.random()*3);for(var j=0;j<d2;j++){advanceDate();dayHealth(false);}say('You took a wrong trail and lose '+d2+' days finding your way back.','warn');}
+  else if(r<.7){var cloth=Math.floor(Math.random()*3)+1,amm=20*Math.floor(Math.random()*3),fd=Math.floor(Math.random()*50);G.clothes+=cloth;G.ammo+=amm;G.food+=fd;say('You find an abandoned wagon. Inside: '+cloth+' sets of clothing'+(amm?', '+amm+' bullets':'')+(fd?', '+fd+' lbs of food':'')+'.');}
+  else if(r<.78&&G.oxen>0){G.oxen--;say('One of your oxen has died. The work was too much.','warn');}
+  else if(r<.86&&/snow|cold/.test(G.weather)){var dd=1+Math.floor(Math.random()*3);for(var k=0;k<dd;k++){advanceDate();dayHealth(true);}say('A blizzard! You are snowed in for '+dd+' day'+(dd>1?'s':'')+'.','warn');}
+  else if(r<.93){who.ill=pick(INJ);who.days=0;say(who.name+' has '+who.ill+'.','warn');}
+  else{var mi=10+Math.floor(Math.random()*15);var ns=nextStop();G.mi=Math.min(ns.mi-1,G.mi+mi);say('A fellow traveler shows you a shortcut. You save '+mi+' miles.');}
+  beep(440,.08);status();
+  if(!alive().length){allDead();return;}
+  gap();travelMenu();
+}
+function repairWagon(){
+  cls();say('Your wagon has a broken '+G.stuck+'.');
+  var chance=G.job.fix?.75:.4;
+  choose([['Try to repair it',function(){
+    var d=1+Math.floor(Math.random()*2);for(var i=0;i<d;i++){advanceDate();dayHealth(true);}
+    cls();
+    if(Math.random()<chance){say('After '+d+' day'+(d>1?'s':'')+' of work, the '+G.stuck+' is fixed.');G.stuck=false;}
+    else say('After '+d+' day'+(d>1?'s':'')+' of work, you could not fix it. Try again or trade for a part.','warn');
+    status();if(!alive().length){allDead();return;}travelMenu();
+  }],['Attempt to trade',trade],['Back',function(){cls();travelMenu();}]]);
+}
+function supplies(){
+  cls();say('YOUR SUPPLIES');gap();
+  say('Oxen: '+G.oxen);say('Food: '+Math.floor(G.food)+' lbs');say('Clothing: '+G.clothes+' sets');say('Bullets: '+G.ammo);
+  say('Spare wheels: '+G.wheel+'   axles: '+G.axle+'   tongues: '+G.tongue);say('Cash: '+money(G.cash));
+  gap();say('YOUR PARTY');
+  G.party.forEach(function(p){say((p.hp<=0?'  (died) ':'  ')+p.name+(p.hp>0?': '+(p.hp>75?'good':p.hp>50?'fair':p.hp>25?'poor':'very poor')+(p.ill?', has '+p.ill:''):''),p.hp<=0?'dim':p.ill?'warn':'');});
+  choose([['Back',function(){cls();travelMenu();}]]);
+}
+function map(){
+  cls();say('THE TRAIL');gap();
+  STOPS.forEach(function(s,i){
+    var mark=i<=G.stop?'[x]':i===G.stop+1?'[>]':'[ ]';
+    say(mark+' '+String(s.mi).padStart(4,' ')+' mi  '+s.name,i<=G.stop?'dim':'');
+  });
+  gap();say('You have traveled '+G.mi+' miles.');
+  choose([['Back',function(){cls();travelMenu();}]]);
+}
+function changePace(){
+  cls();say('Change pace:');gap();
+  say('1. Easy: a short day on the trail. Gentle on everyone.');say('2. Hard: long days. Tiring.');say('3. Punishing: dawn to dark. Very hard on health.');
+  choose(PACE.map(function(p,i){return [p[0],function(){G.pace=i;cls();say('Pace set to '+p[0]+'.');travelMenu();}];}));
+}
+function changeRations(){
+  cls();say('Change food rations:');gap();
+  say('1. Full: 3 lbs per person a day.');say('2. Light: 2 lbs per person a day.');say('3. Scraps: 1 lb per person a day.');
+  choose(RATIONS.map(function(r,i){return [r[0],function(){G.ration=i;cls();say('Rations set to '+r[0]+'.');travelMenu();}];}));
+}
+function rest(){
+  cls();say('How many days will you rest? (1 to 9)');
+  askNum('Days',9,function(n){
+    cls();if(!n){travelMenu();return;}
+    for(var i=0;i<n;i++){advanceDate();setWeather();dayHealth(true);}
+    say('You rest for '+n+' day'+(n>1?'s':'')+'.');status();
+    if(!alive().length){allDead();return;}travelMenu();
+  });
+}
+function trade(){
+  cls();
+  var offers=[['oxen',1,'food',100],['clothes',2,'oxen',1],['ammo',40,'clothes',2],['food',150,'wheel',1],['food',150,'axle',1],['ammo',60,'tongue',1],['clothes',1,'food',60],['food',80,'ammo',40]];
+  var o=pick(offers),label={oxen:'oxen',food:'lbs of food',clothes:'sets of clothing',ammo:'bullets',wheel:'wagon wheel',axle:'wagon axle',tongue:'wagon tongue'};
+  advanceDate();dayHealth(true);status();
+  say('A trader offers you '+o[1]+' '+label[o[0]]+' for '+o[3]+' '+label[o[2]]+'.');
+  say('You have '+Math.floor(G[o[2]])+' '+label[o[2]]+'.','dim');
+  choose([['Accept',function(){
+    cls();
+    if(G[o[2]]<o[3]){say('You do not have enough to trade.','warn');}
+    else{G[o[2]]-=o[3];G[o[0]]+=o[1];say('It is a deal.');beep(880,.05);
+      if(G.stuck&&o[0]===G.stuck){G[o[0]]--;say('You fit the new '+G.stuck+' right away.');G.stuck=false;}}
+    status();travelMenu();
+  }],['Decline',function(){cls();say('You decline the offer.');travelMenu();}]]);
+}
+
+/* ---------- hunting ---------- */
+var ANIMALS=[['rabbit',3,10,6,90],['squirrel',1,6,5,110],['deer',60,22,16,55],['bison',350,34,22,30],['bear',200,28,22,40]];
+function hunt(){
+  if(G.ammo<=0){cls();say('You have no bullets.','warn');travelMenu();return;}
+  cls();say('HUNTING: tap or click an animal to shoot. Each shot uses a bullet. You have 30 seconds.','dim');
+  var c=document.createElement('canvas');c.width=320;c.height=170;c.style.cssText='width:100%;max-height:52vh;image-rendering:pixelated;border:2px solid #1E3A1E;touch-action:none;cursor:crosshair';
+  logEl.appendChild(c);var h=c.getContext('2d');
+  var mobs=[],shots=0,meat=0,timeLeft=30,spawn=0,flash=null,stopped=false,lastT=performance.now(),killed=[];
+  choicesEl.innerHTML='';var stopB=document.createElement('button');stopB.textContent='1. Stop hunting';stopB.addEventListener('click',function(){end();});choicesEl.appendChild(stopB);
+  c.addEventListener('pointerdown',function(e){
+    if(stopped)return;if(G.ammo<=0){end();return;}
+    var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*320,y=(e.clientY-r.top)/r.height*170;
+    G.ammo--;shots++;beep(120,.05);flash={x:x,y:y,t:.12};
+    for(var i=mobs.length-1;i>=0;i--){var m=mobs[i];if(!m.dead&&Math.abs(x-m.x)<m.w/2+3&&Math.abs(y-m.y)<m.h/2+3){m.dead=true;meat+=m.lbs;killed.push(m.kind);beep(660,.08);break;}}
+    if(G.ammo<=0)setTimeout(end,400);
+  });
+  function end(){
+    if(stopped)return;stopped=true;
+    var carry=Math.min(100,meat);G.food+=carry;
+    advanceDate();dayHealth(true);status();cls();
+    if(!killed.length)say('You used '+shots+' bullet'+(shots===1?'':'s')+' and came back empty handed.');
+    else{say('You shot: '+killed.join(', ')+'.');say('That is '+meat+' lbs of meat.');if(meat>100)say('You can only carry 100 lbs back to the wagon.','warn');say('You add '+carry+' lbs of food.');}
+    if(!alive().length){allDead();return;}
+    travelMenu();
+  }
+  function frame(t){
+    if(stopped)return;
+    var dt=Math.min(.05,(t-lastT)/1000);lastT=t;timeLeft-=dt;spawn-=dt;
+    if(timeLeft<=0){end();return;}
+    if(spawn<=0&&mobs.filter(function(m){return !m.dead;}).length<4){
+      spawn=1+Math.random()*1.6;var a=pick(ANIMALS),dir=Math.random()<.5?1:-1;
+      mobs.push({kind:a[0],lbs:a[1]+Math.floor(Math.random()*a[1]*.3),w:a[2],h:a[3],sp:a[4]*(.7+Math.random()*.6),dir:dir,x:dir>0?-20:340,y:70+Math.random()*85,dead:false,t:0});
+    }
+    h.fillStyle='#0B140B';h.fillRect(0,0,320,170);
+    h.fillStyle='#173017';for(var x=0;x<320;x++){var hh=10+Math.sin(x*.04)*6;h.fillRect(x,60-hh,1,hh);}
+    h.fillStyle='#1E3A1E';h.fillRect(0,60,320,110);
+    h.fillStyle='#2E6E2E';for(var k=0;k<14;k++){var bx=(k*53)%320,by=70+(k*37)%90;h.fillRect(bx,by,8,4);h.fillRect(bx+2,by-3,4,3);}
+    mobs.forEach(function(m){
+      m.t+=dt;if(!m.dead)m.x+=m.dir*m.sp*dt;
+      h.fillStyle=m.dead?'#3E8F3E':'#7CFF7C';
+      var lx=m.x-m.w/2,ly=m.y-m.h/2,leg=m.dead?0:(Math.floor(m.t*8)%2)*2;
+      if(m.dead){h.fillRect(lx,m.y,m.w,m.h/3);return;}
+      h.fillRect(lx,ly+m.h*.25,m.w,m.h*.5);
+      var hx=m.dir>0?lx+m.w-2:lx-m.w*.25+2;h.fillRect(hx,ly,m.w*.25,m.h*.4);
+      h.fillRect(lx+2,ly+m.h*.75,2,m.h*.25-leg);h.fillRect(lx+m.w-4,ly+m.h*.75,2,m.h*.25-(2-leg));
+      if(m.kind==='deer'){h.fillRect(hx+(m.dir>0?2:0),ly-4,1,4);h.fillRect(hx+(m.dir>0?5:3),ly-4,1,4);}
+      if(m.kind==='bison'){h.fillStyle='#CFFFCF';h.fillRect(m.dir>0?hx+m.w*.2:hx-1,ly+2,2,2);}
+    });
+    mobs=mobs.filter(function(m){return m.dead?m.t<8:m.x>-40&&m.x<360;});
+    if(flash){flash.t-=dt;h.fillStyle='#FFD24A';h.fillRect(flash.x-3,flash.y-3,6,6);if(flash.t<=0)flash=null;}
+    h.fillStyle='#7CFF7C';h.font='12px VT323, monospace';h.fillText('Time '+Math.ceil(timeLeft)+'   Bullets '+G.ammo+'   Meat '+meat+' lbs',6,12);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- rivers ---------- */
+function arrive(s){
+  cls();landmark=s.kind==='river'?'river':s.kind==='fort'?'fort':s.kind==='mark'?s.shape:s.kind==='dalles'?'peaks':null;
+  status();beep(988,.08);
+  say('You have arrived at '+s.name+'.');say(dateStr(),'dim');gap();
+  if(s.kind==='river'){river(s);return;}
+  if(s.kind==='dalles'){dalles();return;}
+  if(s.kind==='end'){finish();return;}
+  if(s.kind==='fort')say('There is a trading post here where you can buy supplies.');
+  else say(pick(['The view is something to write home about.','Other travelers have carved their names here.','You take a moment to admire the landmark.']));
+  travelMenu();
+}
+function river(s){
+  var depth=+(s.depth[0]+Math.random()*(s.depth[1]-s.depth[0])).toFixed(1);
+  if(G.month>=6&&G.month<=8)depth=Math.max(1.5,+(depth*.7).toFixed(1));
+  var width=Math.floor(s.width[0]+Math.random()*(s.width[1]-s.width[0]));
+  say('The river is '+width+' feet across and '+depth+' feet deep.');gap();
+  var opts=[
+    ['Ford the river',function(){cross('ford',depth);}],
+    ['Caulk the wagon and float it',function(){cross('float',depth);}]
+  ];
+  if(s.ferry)opts.push(['Take a ferry ($'+s.ferry+')',function(){if(G.cash<s.ferry){cls();say('You cannot afford the ferry.','warn');river(s);return;}G.cash-=s.ferry;cross('ferry',depth);}]);
+  opts.push(['Wait a day to see if it gets better',function(){advanceDate();dayHealth(true);status();cls();say('You wait a day.');river(s);}]);
+  opts.push(['Check supplies',function(){supplies();choose([['Back to the river',function(){cls();river(s);}]]);}]);
+  choose(opts);
+}
+function cross(how,depth){
+  cls();
+  var risk=how==='ferry'?.04:how==='ford'?(depth<2.5?.03:depth<3.5?.35:.8):(depth<2.5?.12:.18);
+  var days=how==='ferry'?2:1;for(var i=0;i<days;i++){advanceDate();dayHealth(true);}
+  if(Math.random()>risk){say('You made it safely across the river.');beep(988,.08);}
+  else{
+    var fl=Math.floor(G.food*(.15+Math.random()*.25)),cl=Math.floor(G.clothes*Math.random()*.4),am=Math.floor(G.ammo*Math.random()*.4);
+    G.food-=fl;G.clothes-=cl;G.ammo-=am;
+    say(how==='ford'?'The wagon tips over in the deep water!':'The current pushes the wagon over!','bad');
+    say('You lose '+fl+' lbs of food'+(cl?', '+cl+' sets of clothing':'')+(am?', '+am+' bullets':'')+'.','bad');
+    if(Math.random()<.3&&G.oxen>2){G.oxen--;say('One ox drowns.','bad');}
+    if(Math.random()<.18){var v=pick(alive());if(v){v.hp=0;say(v.name+' was swept away by the current and drowned.','bad');beep(160,.5);}}
+  }
+  status();landmark=null;
+  if(!alive().length){allDead();return;}
+  travelMenu();
+}
+function dalles(){
+  say('The trail ends here at the great river. To reach the valley you must either float your wagon down the river on a raft, or take the long toll road around the mountain.');gap();
+  choose([['Float down the river',function(){
+    cls();var bad=0;
+    for(var i=0;i<3;i++){if(Math.random()<.25){bad++;}}
+    advanceDate();dayHealth(true);
+    if(!bad)say('You ride the rapids and reach the bottom safely!');
+    else{
+      say('You hit rocks '+bad+' time'+(bad>1?'s':'')+' in the rapids!','bad');
+      var fl=Math.floor(G.food*.3*bad);G.food=Math.max(0,G.food-fl);G.clothes=Math.max(0,G.clothes-bad);say('You lose '+fl+' lbs of food and some clothing.','bad');
+      if(bad>=2){var v=pick(alive());if(v){v.hp=0;say(v.name+' fell into the river and drowned.','bad');}}
+    }
+    G.stop++;G.mi=STOPS[G.stop].mi;status();
+    if(!alive().length){allDead();return;}
+    gap();choose([['Continue',function(){arrive(STOPS[G.stop]);}]]);
+  }],['Take the toll road ($30, slower)',function(){
+    cls();
+    if(G.cash<30){say('You cannot afford the toll. You must float.','warn');dalles();return;}
+    G.cash-=30;rolling=true;
+    for(var i=0;i<10;i++){advanceDate();setWeather();dayHealth(false);}
+    rolling=false;G.stop++;G.mi=STOPS[G.stop].mi;
+    say('After ten hard days on the mountain road, you come down into the valley.');status();
+    if(!alive().length){allDead();return;}
+    gap();choose([['Continue',function(){arrive(STOPS[G.stop]);}]]);
+  }]]);
+}
+
+/* ---------- endings ---------- */
+function finish(){
+  landmark='hills';var a=alive();
+  say('Congratulations! You have made it to Oregon!');gap();
+  var pts=0,lines=[];
+  a.forEach(function(p){var v=p.hp>75?600:p.hp>50?450:p.hp>25?300:150;pts+=v;lines.push(p.name+' ('+(p.hp>75?'good':p.hp>50?'fair':p.hp>25?'poor':'very poor')+' health): '+v);});
+  var sup=G.oxen*4+Math.floor(G.food/25)+G.clothes*2+Math.floor(G.ammo/50)+(G.wheel+G.axle+G.tongue)*2+Math.floor(G.cash/5);
+  lines.forEach(function(l){say(l);});
+  say('Supplies and cash: '+sup);pts+=sup;
+  say('Occupation bonus: x'+G.job.mult);
+  var total=pts*G.job.mult;gap();say('FINAL SCORE: '+total);
+  var best=0;try{best=+localStorage.getItem('westwardBest')||0;if(total>best)localStorage.setItem('westwardBest',total);}catch(e){}
+  say(total>best?'A new best score!':'Best score: '+best,'dim');
+  [523,659,784,1047].forEach(function(f,i){setTimeout(function(){beep(f,.15);},i*160);});
+  choose([['Travel the trail again',title]]);
+}
+function allDead(){
+  halt();cls();landmark=null;status();
+  say('Everyone in your party has died.','bad');gap();
+  say('      ________');
+  say('     /        \\');
+  say('    |  HERE    |');
+  say('    |  LIES    |');
+  say('    | '+(G.party[0].name.slice(0,8)).padEnd(8,' ')+' |');
+  say('    |          |');
+  say('    | '+String(G.mi).padStart(4,' ')+' mi  |');
+  say('  __|__________|__');
+  gap();say('The wagon rests '+(1930-G.mi)+' miles short of Oregon.');
+  choose([['Try the trail again',title]]);
+}
+
+drawScene();animate();title();
+})();
+</script>
+</body>
+</html>
