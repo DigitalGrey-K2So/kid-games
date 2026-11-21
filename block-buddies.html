@@ -165,6 +165,7 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
             <button id="shBig" data-shapes="big" aria-pressed="true">Big shapes</button>
           </div>
           <button id="soundBtn" class="sticker mini" aria-pressed="true">Sound on</button>
+      <button id="musicBtn" class="sticker mini" aria-pressed="true">Music on</button>
         </div>
       </div>
     </div>
@@ -220,7 +221,7 @@ var nextCv=$('nextCv'), nctx=nextCv.getContext('2d');
 var stage=$('stage'), overlay=$('overlay'), toastEl=$('toast');
 var reduceMotion=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-var S={speed:'turtle',shapes:'big',size:'bigger',sound:true,stars:0};
+var S={speed:'turtle',shapes:'big',size:'bigger',sound:true,music:true,stars:0};
 function applySize(){COLS=SIZES[S.size][0];ROWS=SIZES[S.size][1];}
 var grid, cur=null, next=null, bag=[], acc=0, clearing=null, playing=false, started=false;
 var cs=40, particles=[], last=0;
@@ -413,12 +414,13 @@ function showStars(bump){
   if(bump){var b=$('starsBox');b.classList.remove('bump');void b.offsetWidth;b.classList.add('bump');}
 }
 function saveSettings(){
-  try{localStorage.setItem('blockBuddies',JSON.stringify({speed:S.speed,shapes:S.shapes,size:S.size,sound:S.sound}));}catch(e){}
+  try{localStorage.setItem('blockBuddies',JSON.stringify({speed:S.speed,shapes:S.shapes,size:S.size,sound:S.sound,music:S.music}));}catch(e){}
 }
 function syncOpts(){
   document.querySelectorAll('[data-speed]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.speed===S.speed));});
   document.querySelectorAll('[data-shapes]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.shapes===S.shapes));});
   document.querySelectorAll('[data-size]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.size===S.size));});
+  $('musicBtn').textContent=S.music?'Music on':'Music off';$('musicBtn').setAttribute('aria-pressed',String(S.music));
   $('soundBtn').textContent=S.sound?'Sound on':'Sound off';
   $('soundBtn').setAttribute('aria-pressed',String(S.sound));
 }
@@ -448,14 +450,65 @@ var sfx={
   tidy:function(){[440,330,247,196].forEach(function(f,i){tone(f,.16,'sine',.13,i*.08);});}
 };
 
+/* ---------- music: an original bouncy chiptune, played live with the Web Audio API ----------
+   lead is square wave eighth notes, bass is a triangle wave, plus a tiny noise hi hat.
+   numbers are MIDI notes (60 is middle C), 0 is a rest */
+var TUNE={
+  lead:[
+    72,0,76,79, 76,72,74,0, 71,0,74,77, 74,71,72,0, 69,72,76,72, 77,76,74,72, 74,0,71,74, 72,0,0,0,
+    76,76,77,79, 81,79,77,76, 74,74,76,77, 79,77,76,74, 72,74,76,72, 69,71,72,74, 76,74,72,71, 72,0,72,0,
+    79,0,79,81, 79,77,76,0, 77,0,77,79, 77,76,74,0, 76,0,76,77, 76,74,72,74, 71,72,74,76, 74,0,0,0,
+    72,0,76,79, 84,0,83,81, 79,0,77,76, 74,76,77,79, 81,79,77,76, 74,72,71,74, 72,0,79,0, 72,0,0,0
+  ],
+  bass:[48,43,45,43, 41,43,48,43, 41,48,45,43, 48,43,41,48],
+  tempo:{turtle:126,bunny:140,cheetah:156}
+};
+var music={on:false,step:0,next:0,timer:null,gain:null,noise:null};
+function mtof(m){return 440*Math.pow(2,(m-69)/12);}
+function musicNote(type,freq,t,dur,vol){
+  var o=ac.createOscillator(),g=ac.createGain();
+  o.type=type;o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.008);g.gain.setValueAtTime(vol,t+dur*.7);g.gain.linearRampToValueAtTime(0,t+dur);
+  o.connect(g);g.connect(music.gain);o.start(t);o.stop(t+dur+.02);
+}
+function musicHat(t,vol){
+  if(!music.noise){var len=ac.sampleRate*.05,buf=ac.createBuffer(1,len,ac.sampleRate),d=buf.getChannelData(0);for(var i=0;i<len;i++)d[i]=Math.random()*2-1;music.noise=buf;}
+  var src=ac.createBufferSource(),g=ac.createGain(),hp=ac.createBiquadFilter();
+  hp.type='highpass';hp.frequency.value=6000;src.buffer=music.noise;
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+.04);
+  src.connect(hp);hp.connect(g);g.connect(music.gain);src.start(t);
+}
+function musicTick(){
+  if(!music.on||!ac)return;
+  var eighth=60/TUNE.tempo[S.speed]/2;
+  while(music.next<ac.currentTime+.15){
+    var st=music.step,n=TUNE.lead[st%TUNE.lead.length],t=music.next;
+    if(n)musicNote('square',mtof(n),t,eighth*.9,.05);
+    if(st%2===0){var b=TUNE.bass[Math.floor(st/8)%TUNE.bass.length],up=(st%8===4)?7:0;musicNote('triangle',mtof(b+up),t,eighth*1.8,.12);}
+    musicHat(t,st%4===2?.05:.025);
+    music.step++;music.next+=eighth;
+  }
+}
+function musicStart(){
+  if(!S.music||!ac||music.on)return;
+  if(!music.gain){music.gain=ac.createGain();music.gain.gain.value=.8;music.gain.connect(ac.destination);}
+  music.on=true;music.next=ac.currentTime+.06;
+  music.timer=setInterval(musicTick,25);musicTick();
+}
+function musicStop(){
+  music.on=false;clearInterval(music.timer);music.timer=null;
+  if(music.gain&&ac){var g=music.gain;g.gain.setValueAtTime(g.gain.value,ac.currentTime);g.gain.linearRampToValueAtTime(0,ac.currentTime+.05);music.gain=null;setTimeout(function(){try{g.disconnect();}catch(e){}},200);}
+}
+
 /* ---------- play, pause ---------- */
 function play(){
   initAudio();
   started=true;playing=true;overlay.hidden=true;last=performance.now();
+  musicStart();
 }
 function pause(){
   if(!playing)return;
-  playing=false;
+  playing=false;musicStop();
   $('cardTitle').textContent='Taking a break';
   $('playBtn').textContent='Keep going';
   $('againBtn').hidden=false;
@@ -522,6 +575,7 @@ document.addEventListener('dblclick',function(e){e.preventDefault();});
 $('playBtn').addEventListener('click',play);
 $('againBtn').addEventListener('click',startOver);
 $('pauseBtn').addEventListener('click',pause);
+$('musicBtn').addEventListener('click',function(){S.music=!S.music;initAudio();if(S.music){if(playing)musicStart();}else musicStop();syncOpts();saveSettings();});
 $('soundBtn').addEventListener('click',function(){S.sound=!S.sound;if(S.sound)initAudio();syncOpts();saveSettings();});
 document.querySelectorAll('[data-speed]').forEach(function(b){
   b.addEventListener('click',function(){S.speed=b.dataset.speed;syncOpts();saveSettings();});
@@ -567,6 +621,7 @@ function start(data){
     if(SPEEDS[saved.speed])S.speed=saved.speed;
     if(saved.shapes==='little'||saved.shapes==='big')S.shapes=saved.shapes;
     if(typeof saved.sound==='boolean')S.sound=saved.sound;
+    if(typeof saved.music==='boolean')S.music=saved.music;
     if(SIZES[saved.size])S.size=saved.size;
   }catch(e){}
   if(SPEEDS[data.speed])S.speed=data.speed;
