@@ -1,5 +1,5 @@
 /* Offline support. Change VERSION whenever you upload new copies of the games so the iPad picks them up. */
-var VERSION = 'kid-games-v11';
+var VERSION = 'kid-games-v12';
 var FILES = [
   './',
   'index.html',
@@ -15,6 +15,7 @@ var FILES = [
   'coop-defense.html',
   'waddle-across.html',
   'bubble-bay.html',
+  'sweet-swap.html',
   'westward.html',
   'gridville.html',
   'manifest.webmanifest',
