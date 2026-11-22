@@ -74,7 +74,7 @@ input[type=range]{width:100%}
 <div id="win" class="bevel">
   <div id="titlebar"><span>GRIDVILLE</span><span id="cityName">Untitled</span></div>
   <div id="menubar">
-    <a class="btn" id="homeBtn" href="index.html" style="text-decoration:none;display:inline-flex;align-items:center">All games</a>
+    <a class="btn" id="homeBtn" href="index.html" aria-label="Home: back to all games" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;background:#FFE066;color:#111;font-weight:600;font-size:16px;min-height:38px;padding:4px 14px"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M3.5 11.5L12 4l8.5 7.5" fill="none" stroke="#111111" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9.5h4.5v-5h3v5H18V10" fill="none" stroke="#111111" stroke-width="2.6" stroke-linejoin="round"/></svg>Home</a>
     <button class="btn" id="budgetBtn">Budget</button>
     <button class="btn" id="overlayBtn" aria-pressed="false">Map: City</button>
     <button class="btn" data-spd="0" aria-pressed="false">Pause</button>
@@ -566,6 +566,7 @@ $('overlayBtn').addEventListener('click',function(){overlay=OVERLAYS[(OVERLAYS.i
 $('zoomIn').addEventListener('click',function(){var r=cv.getBoundingClientRect();setZoom(ts*1.25,r.left+r.width/2,r.top+r.height/2);});
 $('zoomOut').addEventListener('click',function(){var r=cv.getBoundingClientRect();setZoom(ts/1.25,r.left+r.width/2,r.top+r.height/2);});
 document.addEventListener('visibilitychange',function(){if(document.hidden)save();});
+window.addEventListener('pagehide',save);
 function frame(t){
   var dt=Math.min(.1,(t-last)/1000);last=t;frameT++;
   if(speed&&$('modal').hidden){acc+=dt;if(acc>=SPEEDS[speed]){acc=0;month();refresh();}}
