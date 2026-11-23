@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Word Garden</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kid Games">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: sticker book, garden bed edition. A picture card on top, a row of flower pots in the middle,
+   and letter seeds scattered in the soil below. Grown words line up as flowers along the bottom fence. */
+:root{
+  --page:#C8EBA0;
+  --page-dot:#B8E28C;
+  --ink:#2F3B1C;
+  --paper:#FFFCF0;
+  --soil:#8A5A3A;
+  --pot:#E07A4A;
+  --go:#FFD84D;
+  --font-display:'Fredoka','Arial Rounded MT Bold','Trebuchet MS',sans-serif;
+  --font-body:'Nunito','Avenir Next','Segoe UI',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{
+  background-color:var(--page);
+  background-image:radial-gradient(var(--page-dot) 18%,transparent 19%);
+  background-size:44px 44px;
+  color:var(--ink);font-family:var(--font-body);font-weight:700;
+  overflow:hidden;overscroll-behavior:none;touch-action:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+}
+#app{height:100%;display:flex;flex-direction:column;gap:10px;padding:12px 16px 16px}
+.sticker{font-family:var(--font-display);font-weight:600;color:var(--ink);background:var(--paper);border:4px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink)}
+button{cursor:pointer;font:inherit;color:inherit}
+button.sticker:active,a.sticker:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+button:focus-visible,a:focus-visible{outline:4px solid #fff;outline-offset:3px}
+#info{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,5vw,40px);line-height:1;margin:0;margin-right:auto;letter-spacing:.5px;text-shadow:3px 3px 0 var(--paper)}
+.stat{display:flex;align-items:center;gap:8px;padding:4px 16px 4px 12px;font-size:26px;font-variant-numeric:tabular-nums;min-height:56px}
+.stat svg{width:30px;height:30px}
+.stat small{font-size:16px;font-family:var(--font-body);font-weight:800}
+.bump{animation:bump .4s}
+@keyframes bump{40%{transform:scale(1.2) rotate(-5deg)}}
+.mini{min-height:54px;min-width:54px;padding:0 12px;font-size:16px;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.mini svg{width:24px;height:24px}
+
+#stage{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;gap:12px;border:6px solid var(--ink);border-radius:22px;box-shadow:0 8px 0 var(--ink);background:linear-gradient(#BFEAFF 0 34%,#9BD979 34% 37%,#8A5A3A 37%);overflow:hidden;padding:14px}
+#cardRow{display:flex;justify-content:center;align-items:center;gap:14px;z-index:1}
+#picCard{display:flex;align-items:center;gap:14px;padding:8px 18px 8px 12px}
+#pic{font-size:clamp(54px,10vh,92px);line-height:1}
+#sayBtn{display:flex;align-items:center;gap:8px;font-size:22px;padding:10px 16px;background:var(--go);border-radius:18px;min-height:56px}
+#sayBtn svg{width:28px;height:28px}
+#pots{display:flex;justify-content:center;gap:clamp(8px,2vw,22px);align-items:flex-end;min-height:clamp(130px,22vh,200px);z-index:1}
+.pot{position:relative;width:clamp(74px,13vw,118px);display:flex;flex-direction:column;align-items:center}
+.pot .flower{width:100%;height:clamp(60px,11vh,100px);display:flex;align-items:flex-end;justify-content:center}
+.pot .flower svg{width:80%;height:100%;transform-origin:50% 100%;transform:scale(0)}
+.pot.grown .flower svg{transform:scale(1);transition:transform .5s cubic-bezier(.3,1.6,.5,1)}
+.pot .clay{width:100%;aspect-ratio:1.15;background:var(--pot);border:4px solid var(--ink);border-radius:6px 6px 18px 18px;clip-path:polygon(0 0,100% 0,88% 100%,12% 100%);display:grid;place-items:center;position:relative}
+.pot .rim{width:112%;height:16px;background:#C9643A;border:4px solid var(--ink);border-radius:8px;margin-bottom:-4px;z-index:1}
+.pot .letter{font-family:var(--font-display);font-weight:700;font-size:clamp(40px,7vw,64px);line-height:1;color:#FFFCF0;text-shadow:0 3px 0 rgba(47,59,28,.5)}
+.pot .ghost{color:rgba(255,252,240,.35);text-shadow:none}
+.pot.next .rim{background:#FFE066;animation:glow 1.2s infinite}
+@keyframes glow{50%{background:#FFF3B0}}
+.pot.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#soil{flex:1;min-height:120px;position:relative}
+.seed{position:absolute;width:clamp(72px,11vw,96px);height:clamp(72px,11vw,96px);border-radius:50% 50% 46% 46%;border:4px solid var(--ink);box-shadow:0 5px 0 var(--ink);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:clamp(40px,6.5vw,56px);line-height:1;color:var(--ink);touch-action:none;cursor:grab;transition:left .35s,top .35s,transform .2s}
+.seed.drag{transition:none;cursor:grabbing;transform:scale(1.15) rotate(-6deg);z-index:5;box-shadow:0 12px 0 rgba(47,59,28,.6)}
+.seed.wiggle{animation:wiggle .6s infinite}
+@keyframes wiggle{25%{transform:rotate(-10deg) scale(1.08)}75%{transform:rotate(10deg) scale(1.08)}}
+.seed.used{opacity:0;pointer-events:none}
+#fence{display:flex;align-items:flex-end;gap:4px;min-height:44px;padding:4px 10px;overflow-x:auto;scrollbar-width:none;z-index:1}
+#fence .bloom{font-size:30px;line-height:1;display:flex;flex-direction:column;align-items:center;font-family:var(--font-display);font-weight:600;font-size:13px;color:#FFFCF0}
+#fence .bloom span{font-size:30px}
+#overlay{position:absolute;inset:0;display:grid;place-items:center;z-index:10;background:rgba(47,59,28,.15)}
+#overlay[hidden]{display:none}
+#card{padding:20px 28px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;max-width:min(96%,520px);max-height:98%;overflow:auto}
+#card h2{font-family:var(--font-display);font-weight:700;font-size:32px;margin:0;text-wrap:balance}
+#cardSub{margin:0;font-size:18px}
+#cardSub:empty{display:none}
+#cardStars{display:flex;gap:8px}
+#cardStars:empty{display:none}
+#cardStars svg{width:50px;height:50px}
+#playBtn{background:#7BE38F;font-size:30px;padding:12px 38px;min-height:74px;border-radius:26px}
+#levels{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+#levels button{min-width:64px;min-height:56px;font-size:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;padding:4px 10px}
+#levels button small{font-size:12px;margin-top:3px}
+#levels button[disabled]{opacity:.4;cursor:default}
+#levels button.on{background:#FFE066}
+#opts{display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+#toast{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%) scale(0);z-index:8;pointer-events:none;padding:8px 22px;font-size:clamp(24px,5vw,38px);white-space:nowrap;background:var(--go)}
+#toast.show{animation:pop 1.2s both}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(0) rotate(-8deg)}18%{transform:translate(-50%,-50%) scale(1.1) rotate(3deg)}28%,78%{transform:translate(-50%,-50%) scale(1) rotate(-2deg);opacity:1}100%{transform:translate(-50%,-50%) scale(.9);opacity:0}}
+@media (prefers-reduced-motion:reduce){#toast.show{animation:none;transform:translate(-50%,-50%) scale(1)}.bump,.seed.wiggle,.pot.next .rim,.pot.shake{animation:none}.seed,.pot.grown .flower svg{transition:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="info">
+    <h1>Word Garden</h1>
+    <div id="starBox" class="sticker stat" aria-live="polite" aria-label="Flowers grown">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#FF7AB6" stroke="#2F3B1C" stroke-width="1.4"><circle cx="12" cy="6" r="4"/><circle cx="17.5" cy="10" r="4"/><circle cx="15.5" cy="16.5" r="4"/><circle cx="8.5" cy="16.5" r="4"/><circle cx="6.5" cy="10" r="4"/></g><circle cx="12" cy="12" r="3.6" fill="#FFD84D" stroke="#2F3B1C" stroke-width="1.4"/></svg>
+      <span id="stars">0</span>
+    </div>
+    <div class="sticker stat"><small>Level</small><span id="level">1</span></div>
+    <a id="homeBtn" href="index.html" class="sticker mini" aria-label="Back to all games">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.5L12 4l8.5 7.5" fill="none" stroke="#2F3B1C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9.5h4.5v-5h3v5H18V10" fill="none" stroke="#2F3B1C" stroke-width="2.6" stroke-linejoin="round"/></svg>
+    </a>
+    <button id="pauseBtn" class="sticker mini" aria-label="Pause">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="1.5" fill="#2F3B1C"/><rect x="14" y="4" width="5" height="16" rx="1.5" fill="#2F3B1C"/></svg>
+    </button>
+  </header>
+  <main id="stage">
+    <div id="cardRow">
+      <div id="picCard" class="sticker"><span id="pic" aria-hidden="true">🐸</span></div>
+      <button id="sayBtn" class="sticker" aria-label="Hear the word again">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#2F3B1C"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#2F3B1C" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Hear it
+      </button>
+    </div>
+    <div id="pots" aria-label="Flower pots"></div>
+    <div id="soil" aria-label="Letter seeds"></div>
+    <div id="fence" aria-label="Words you grew"></div>
+    <div id="toast" class="sticker" aria-hidden="true"></div>
+    <div id="overlay">
+      <div id="card" class="sticker">
+        <h2 id="cardTitle">Grow a word garden!</h2>
+        <div id="cardStars"></div>
+        <p id="cardSub">Look at the picture and listen. Drag the letter seeds into the pots to spell the word. Tap a seed to hear its letter.</p>
+        <button id="playBtn" class="sticker">Play</button>
+        <div id="levels" role="group" aria-label="Pick a level"></div>
+        <div id="opts">
+          <button id="ghostBtn" class="sticker mini" aria-pressed="true">Letter hints on</button>
+          <button id="soundBtn" class="sticker mini" aria-pressed="true">Sound on</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="kidkit.js"></script>
+<script>
+(function(){
+'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},words:[{word:'cat',pic:'🐱'},{word:'dog',pic:'🐶'},{word:'sun',pic:'☀️'}]};
+/* each level: word length, how many extra wrong letters, words to grow */
+var LEVELS=[
+  {len:3,decoys:1,count:5,name:'3 letters'},
+  {len:3,decoys:2,count:5,name:'3 letters'},
+  {len:4,decoys:1,count:5,name:'4 letters'},
+  {len:4,decoys:2,count:5,name:'4 letters'},
+  {len:4,decoys:3,count:6,name:'Expert'}
+];
+var SEEDCOL=['#FFB3C7','#FFE38A','#B9E8FF','#D7C2FF','#C6F2B0','#FFC9A0'];
+var FLOWER=['#FF7AB6','#FF5A6E','#B57BFF','#FFB13D','#5CC8FF','#FF8A3D'];
+function $(id){return document.getElementById(id);}
+var S={sound:true,ghost:true,level:1,best:0,stars:[],grown:0};
+var lv,queue=[],word=null,need=0,seeds=[],playing=false,busy=false,mistakes=0,levelMistakes=0,idleT=null,usedWords=[];
+
+/* ---------- words ---------- */
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function startLevel(n){
+  S.level=n;lv=LEVELS[n-1];levelMistakes=0;
+  var pool=KG.words.filter(function(w){return w.word.length===lv.len;});
+  queue=shuffle(pool.slice()).slice(0,lv.count);
+  $('level').textContent=n;$('fence').innerHTML='';
+  nextWord();
+}
+function nextWord(){
+  word=queue.shift();need=0;mistakes=0;busy=false;
+  $('pic').textContent=word.pic;
+  buildPots();buildSeeds();
+  if(playing)setTimeout(sayWord,350);
+  armHint();
+}
+function sayWord(){if(S.sound)KG.speak(word.word);}
+
+/* ---------- pots ---------- */
+function flowerSvg(col){
+  return '<svg viewBox="0 0 60 80" aria-hidden="true"><path d="M30 80V38" stroke="#3E9444" stroke-width="5" stroke-linecap="round"/><path d="M30 60q-14-2-18-12 12 0 18 8z" fill="#4FD98A" stroke="#2F3B1C" stroke-width="2"/><path d="M30 54q14-2 18-12-12 0-18 8z" fill="#4FD98A" stroke="#2F3B1C" stroke-width="2"/>'+
+    '<g fill="'+col+'" stroke="#2F3B1C" stroke-width="2"><circle cx="30" cy="14" r="9"/><circle cx="42" cy="23" r="9"/><circle cx="37" cy="36" r="9"/><circle cx="23" cy="36" r="9"/><circle cx="18" cy="23" r="9"/></g><circle cx="30" cy="26" r="7" fill="#FFD84D" stroke="#2F3B1C" stroke-width="2"/></svg>';
+}
+function buildPots(){
+  var h='';
+  for(var i=0;i<word.word.length;i++){
+    h+='<div class="pot'+(i===0?' next':'')+'" data-i="'+i+'"><div class="flower">'+flowerSvg(FLOWER[(i+S.grown)%FLOWER.length])+'</div><div class="rim"></div><div class="clay"><span class="letter ghost">'+(showGhost()?word.word[i].toUpperCase():'')+'</span></div></div>';
+  }
+  $('pots').innerHTML=h;
+}
+function showGhost(){return S.ghost&&!KG.hard();}
+function updatePots(){
+  document.querySelectorAll('.pot').forEach(function(p,i){
+    p.classList.toggle('next',i===need);
+    p.classList.toggle('grown',i<need);
+    var l=p.querySelector('.letter');
+    if(i<need){l.textContent=word.word[i].toUpperCase();l.classList.remove('ghost');}
+    else{l.textContent=showGhost()?word.word[i].toUpperCase():'';l.classList.add('ghost');}
+  });
+}
+
+/* ---------- seeds ---------- */
+function buildSeeds(){
+  var soil=$('soil');soil.innerHTML='';seeds=[];
+  var letters=word.word.split(''),extra=lv.decoys+(KG.hard()?1:0),abc='abcdefghijklmnopqrstuvwxyz';
+  while(extra>0){var c=abc[Math.floor(Math.random()*26)];if(word.word.indexOf(c)<0&&letters.indexOf(c)<0){letters.push(c);extra--;}}
+  shuffle(letters);
+  letters.forEach(function(ch,i){
+    var b=document.createElement('button');b.className='seed';b.textContent=ch.toUpperCase();b.setAttribute('aria-label','Letter '+ch.toUpperCase());
+    b.style.background=SEEDCOL[i%SEEDCOL.length];
+    soil.appendChild(b);
+    var s={el:b,ch:ch,home:null,used:false};seeds.push(s);
+    bindSeed(s);
+  });
+  layoutSeeds();
+}
+function layoutSeeds(){
+  var soil=$('soil'),W=soil.clientWidth,H=soil.clientHeight,n=seeds.length;
+  if(!n)return;
+  var sz=seeds[0].el.offsetWidth||80,cols=Math.min(n,Math.max(1,Math.floor(W/(sz+16)))),rows=Math.ceil(n/cols);
+  var gapX=(W-cols*sz)/(cols+1),gapY=Math.max(6,(H-rows*sz)/(rows+1));
+  seeds.forEach(function(s,i){
+    var r=Math.floor(i/cols),c=i%cols,inRow=Math.min(cols,n-r*cols),offset=(cols-inRow)*(sz+gapX)/2;
+    var x=offset+gapX+c*(sz+gapX)+((i*37)%11-5),y=gapY+r*(sz+gapY)+((i*53)%13-6);
+    s.home={x:x,y:Math.max(0,Math.min(H-sz,y))};
+    if(!s.used){s.el.style.left=s.home.x+'px';s.el.style.top=s.home.y+'px';}
+  });
+}
+function bindSeed(s){
+  var d=null;
+  s.el.addEventListener('pointerdown',function(e){
+    if(!playing||busy||s.used)return;e.preventDefault();
+    try{s.el.setPointerCapture(e.pointerId);}catch(err){}
+    var r=s.el.getBoundingClientRect(),sr=$('soil').getBoundingClientRect();
+    d={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top,sx:e.clientX,sy:e.clientY,moved:false,sr:sr};
+    s.el.classList.add('drag');s.el.classList.remove('wiggle');
+    armHint();
+  });
+  s.el.addEventListener('pointermove',function(e){
+    if(!d||e.pointerId!==d.id)return;
+    if(Math.hypot(e.clientX-d.sx,e.clientY-d.sy)>8)d.moved=true;
+    s.el.style.left=(e.clientX-d.sr.left-d.dx)+'px';s.el.style.top=(e.clientY-d.sr.top-d.dy)+'px';
+  });
+  function end(e){
+    if(!d)return;var moved=d.moved;d=null;s.el.classList.remove('drag');
+    if(!moved){
+      /* a tap says the letter; if it is the right one, it hops into the pot */
+      if(S.sound)KG.speak(s.ch);
+      if(s.ch===word.word[need])setTimeout(function(){plant(s);},450);
+      else goHome(s);
+      return;
+    }
+    var pot=document.querySelector('.pot.next');
+    var pr=pot?pot.getBoundingClientRect():null,er=s.el.getBoundingClientRect(),cx=er.left+er.width/2,cy=er.top+er.height/2;
+    var potsR=$('pots').getBoundingClientRect();
+    var overPots=cy<potsR.bottom+20&&cy>potsR.top-40;
+    if(overPots&&pr){
+      if(s.ch===word.word[need])plant(s);
+      else{wrong(s);}
+    }else goHome(s);
+  }
+  s.el.addEventListener('pointerup',end);s.el.addEventListener('pointercancel',end);
+  s.el.addEventListener('click',function(e){if(e.detail===0&&playing&&!s.used){if(S.sound)KG.speak(s.ch);if(s.ch===word.word[need])plant(s);else wrong(s);}});
+}
+function goHome(s){s.el.style.left=s.home.x+'px';s.el.style.top=s.home.y+'px';}
+function plant(s){
+  if(s.used||busy)return;
+  var pot=document.querySelector('.pot.next');if(!pot)return;
+  var pr=pot.getBoundingClientRect(),sr=$('soil').getBoundingClientRect(),er=s.el.getBoundingClientRect();
+  s.el.style.left=(pr.left+pr.width/2-sr.left-er.width/2)+'px';s.el.style.top=(pr.bottom-sr.top-er.height)+'px';
+  s.used=true;
+  setTimeout(function(){s.el.classList.add('used');},250);
+  need++;updatePots();sfx.grow(need);
+  if(need>=word.word.length)wordDone();
+  else armHint();
+}
+function wrong(s){
+  mistakes++;levelMistakes++;sfx.nope();KG.error();
+  var pot=document.querySelector('.pot.next');if(pot){pot.classList.remove('shake');void pot.offsetWidth;pot.classList.add('shake');}
+  goHome(s);
+  toast(['Try another seed!','Not that one!','Listen again!'][Math.floor(Math.random()*3)]);
+  if(mistakes>=2){setTimeout(function(){if(S.sound)KG.speak(word.word);},700);}
+  if(mistakes>=3)showHint();
+}
+function wordDone(){
+  busy=true;clearTimeout(idleT);
+  S.grown++;$('stars').textContent=S.grown;var b=$('starBox');b.classList.remove('bump');void b.offsetWidth;b.classList.add('bump');
+  sfx.word();
+  setTimeout(function(){if(S.sound)KG.speak(word.word+'! '+word.word.split('').join(', ')+'. '+word.word+'!');},300);
+  toast(['You grew '+word.word.toUpperCase()+'!','Beautiful!','Great spelling!'][Math.floor(Math.random()*3)]);
+  var f=document.createElement('div');f.className='bloom';f.innerHTML='<span>'+word.pic+'</span>'+word.word;$('fence').appendChild(f);
+  save();
+  setTimeout(function(){if(queue.length)nextWord();else levelDone();},3600);
+}
+function levelDone(){
+  playing=false;
+  var st=levelMistakes<=1?3:levelMistakes<=4?2:1;
+  S.stars[S.level-1]=Math.max(S.stars[S.level-1]||0,st);S.best=Math.max(S.best,S.level);save();
+  var lastLv=S.level===LEVELS.length;
+  $('cardTitle').textContent=lastLv?'Your garden is in full bloom!':'Garden grown!';
+  $('cardStars').innerHTML=starSvg(st>0)+starSvg(st>1)+starSvg(st>2);
+  $('cardSub').textContent='You spelled '+lv.count+' words.'+(lastLv?' You are a super speller!':' Next: '+LEVELS[S.level].name+' words.');
+  $('playBtn').textContent=lastLv?'Play again':'Next level';$('playBtn').dataset.go=String(lastLv?1:S.level+1);
+  showLevels();overlay.hidden=false;sfx.win();
+}
+
+/* ---------- hints: the right seed wiggles if she gets stuck ---------- */
+function armHint(){clearTimeout(idleT);seeds.forEach(function(s){s.el.classList.remove('wiggle');});idleT=setTimeout(showHint,9000);}
+function showHint(){
+  if(!playing||!word)return;
+  var target=seeds.find(function(s){return !s.used&&s.ch===word.word[need];});
+  if(target)target.el.classList.add('wiggle');
+}
+
+/* ---------- UI ---------- */
+var overlay=$('overlay'),toastEl=$('toast'),toastTimer=null;
+function toast(msg){toastEl.textContent=msg;toastEl.classList.remove('show');void toastEl.offsetWidth;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toastEl.classList.remove('show');},1250);}
+function starSvg(on){return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="'+(on?'#FFC400':'#E8F0DA')+'" stroke="#2F3B1C" stroke-width="1.6" stroke-linejoin="round"/></svg>';}
+function showLevels(){
+  var h='';
+  LEVELS.forEach(function(L,i){var n=i+1,open=n<=S.best+1,st=S.stars[i]||0;
+    h+='<button class="sticker'+(n===S.level?' on':'')+'" data-n="'+n+'"'+(open?'':' disabled')+' aria-label="Level '+n+', '+L.name+'">'+n+'<small>'+('★'.repeat(st)+'☆'.repeat(3-st))+'</small></button>';});
+  $('levels').innerHTML=h;
+  document.querySelectorAll('#levels button').forEach(function(b){b.addEventListener('click',function(){
+    startLevel(+b.dataset.n);$('playBtn').dataset.go='';
+    $('cardTitle').textContent='Level '+b.dataset.n;$('cardStars').innerHTML='';$('cardSub').textContent=LEVELS[+b.dataset.n-1].name+' words.';$('playBtn').textContent='Play';showLevels();
+  });});
+}
+function syncOpts(){
+  $('soundBtn').textContent=S.sound?'Sound on':'Sound off';$('soundBtn').setAttribute('aria-pressed',String(S.sound));
+  $('ghostBtn').textContent=S.ghost?'Letter hints on':'Letter hints off';$('ghostBtn').setAttribute('aria-pressed',String(S.ghost));
+}
+function save(){try{localStorage.setItem('wordGarden',JSON.stringify({sound:S.sound,ghost:S.ghost,best:S.best,stars:S.stars,grown:S.grown}));}catch(e){}}
+var ac=null;
+function initAudio(){try{if(!ac){var AC=window.AudioContext||window.webkitAudioContext;if(AC)ac=new AC();}if(ac&&ac.state==='suspended')ac.resume();}catch(e){ac=null;}}
+function tone(f,d,type,v,when,f2){
+  if(!ac||!S.sound)return;
+  try{var o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(when||0);o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.02);}catch(e){}
+}
+var sfx={
+  grow:function(n){var f=[523,659,784,988,1175][Math.min(4,n-1)];tone(f,.14,'triangle',.11,0,f*1.2);},
+  nope:function(){tone(220,.14,'sine',.08,0,180);},
+  word:function(){[784,988,1175,1568].forEach(function(f,i){tone(f,.16,'triangle',.11,i*.08);});},
+  win:function(){[523,659,784,1047,1319].forEach(function(f,i){tone(f,.2,'triangle',.12,i*.1);});}
+};
+function play(){
+  initAudio();
+  var go=$('playBtn').dataset.go;if(go)startLevel(+go);
+  $('playBtn').dataset.go='';$('cardStars').innerHTML='';
+  playing=true;overlay.hidden=true;
+  layoutSeeds();setTimeout(sayWord,300);armHint();
+}
+function pause(){
+  if(!playing)return;playing=false;clearTimeout(idleT);
+  $('cardTitle').textContent='Taking a break';$('cardStars').innerHTML='';$('cardSub').textContent='';
+  $('playBtn').textContent='Keep going';$('playBtn').dataset.go='';showLevels();overlay.hidden=false;
+}
+$('playBtn').addEventListener('click',play);
+$('pauseBtn').addEventListener('click',pause);
+$('sayBtn').addEventListener('click',function(){if(playing){initAudio();sayWord();armHint();}});
+$('soundBtn').addEventListener('click',function(){S.sound=!S.sound;if(S.sound)initAudio();syncOpts();save();});
+$('ghostBtn').addEventListener('click',function(){S.ghost=!S.ghost;syncOpts();save();if(word)updatePots();});
+document.addEventListener('visibilitychange',function(){if(document.hidden)pause();});
+document.addEventListener('gesturestart',function(e){e.preventDefault();});
+window.addEventListener('resize',layoutSeeds);
+if(window.ResizeObserver)new ResizeObserver(layoutSeeds).observe($('soil'));
+
+try{var sv=JSON.parse(localStorage.getItem('wordGarden')||'{}');if(typeof sv.sound==='boolean')S.sound=sv.sound;if(typeof sv.ghost==='boolean')S.ghost=sv.ghost;if(typeof sv.best==='number')S.best=Math.min(LEVELS.length,sv.best);if(Array.isArray(sv.stars))S.stars=sv.stars;if(typeof sv.grown==='number')S.grown=sv.grown;}catch(e){}
+$('stars').textContent=S.grown;syncOpts();
+startLevel(Math.min(LEVELS.length,S.best+1));showLevels();
+KG.init({game:'word-garden',isPlaying:function(){return playing;},onBreak:function(){try{pause();}catch(e){}}});
+})();
+</script>
+</body>
+</html>

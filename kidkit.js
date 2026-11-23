@@ -148,6 +148,7 @@
     /* games call this whenever she makes a mistake */
     error:function(){if(t>=BREAK_AT&&!broken)showBreak();},
     minutes:function(){return t/60;},
-    banner:banner,speak:speak,pickWord:pickWord,wordBar:wordBar
+    banner:banner,speak:speak,pickWord:pickWord,wordBar:wordBar,
+    words:WORDS.map(function(w){return {word:w[0],pic:w[1]};})
   };
 })();
