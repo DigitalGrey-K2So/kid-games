@@ -114,9 +114,11 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
     Drag anywhere to move
   </div>
 </div>
+<script src="kidkit.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 var COLS=11, ROWS=16, ZONE=4, INK='#3A1F4F';
 var SPEED={turtle:{step:.32,len:6},bunny:{step:.22,len:8},cheetah:{step:.15,len:10}};
 var SEGCOL=['#FF8A3D','#FFC93D','#FF6FA8','#9B7BFF','#4FC3F7'];
@@ -171,12 +173,13 @@ function update(dt){
   var sp=SPEED[S.speed],t,i,j,k;
   if(chains.length){
     stepT+=dt;
-    while(stepT>=sp.step){stepT-=sp.step;chains.forEach(stepChain);}
+    var stepLen=sp.step/KG.boost();
+    while(stepT>=stepLen){stepT-=stepLen;chains.forEach(stepChain);}
   }else{
     nextT-=dt;
     if(nextT<=0){S.level++;$('level').textContent=S.level;addFlowers(4);spawnCaterpillar();}
   }
-  t=stepT/sp.step;
+  t=stepT/(sp.step/KG.boost());
   /* bubbles */
   fireT-=dt;
   if(fireT<=0&&bubbles.length<3){fireT=.3;bubbles.push({x:player.x,y:player.y-.6});sfx.blow();}
@@ -204,7 +207,7 @@ function update(dt){
   else chains.some(function(c){return c.segs.some(function(s){
     var p=segPos(s,t);
     if(Math.hypot(p.x-player.x,p.y-player.y)<.75){
-      player.x=COLS/2;player.y=ROWS-.8;player.inv=1.5;drag=null;toast('Oops! Hop back!');sfx.oops();return true;
+      player.x=COLS/2;player.y=ROWS-.8;player.inv=1.5;drag=null;toast('Oops! Hop back!');KG.error();sfx.oops();return true;
     }
     return false;
   });});
@@ -229,7 +232,7 @@ function burst(x,y,col,n){
 /* ---------- drawing ---------- */
 function ell(x,y,rx,ry){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);}
 function draw(){
-  var dpr=window.devicePixelRatio||1,x,y,i,t=chains&&chains.length?stepT/SPEED[S.speed].step:0;
+  var dpr=window.devicePixelRatio||1,x,y,i,t=chains&&chains.length?Math.min(1,stepT/(SPEED[S.speed].step/KG.boost())):0;
   ctx.setTransform(dpr*cs,0,0,dpr*cs,0,0);
   for(y=0;y<ROWS;y++)for(x=0;x<COLS;x++){
     ctx.fillStyle=inZone(y)?((x+y)%2?'#A6E3A0':'#B5EAAE'):((x+y)%2?'#7FD18B':'#8ADB95');
@@ -375,6 +378,7 @@ function start(data){
 var hot=window.claude&&window.claude.hot;
 if(hot&&hot.snapshot)hot.snapshot(function(){return {score:S.score,level:S.level};});
 if(hot&&hot.ready)hot.ready(start);else start(hot&&hot.data?hot.data:{});
+KG.init({game:'bubble-garden',isPlaying:function(){return playing;},onBreak:function(){try{pause();}catch(e){}}});
 })();
 </script>
 </body>

@@ -116,9 +116,11 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
     </div>
   </main>
 </div>
+<script src="kidkit.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 var R=24,D=R*2,COLS=11,RH=R*Math.sqrt(3),W=COLS*D,TOP=6,DANGER=13,H=Math.round(TOP+RH*DANGER+R+130),INK='#1D3557';
 var COLORS=['#FF5A6E','#FFC93D','#4FD98A','#5CB8FF','#B57BFF'];
 var FACES=['😊','😄','😮','😉','😋'];
@@ -215,12 +217,12 @@ function snap(){
     else if(group.length>=5)toast('Super pop!');
     misses=Math.max(0,misses-1);
   }else{
-    sfx.stick();misses++;
+    sfx.stick();misses++;KG.error();
     if(misses>=missLimit()){misses=0;addTopRow();toast('The bubbles moved down!');}
   }
   check();
 }
-function missLimit(){return S.colors<=3?8:S.colors===4?7:6;}
+function missLimit(){return (S.colors<=3?8:S.colors===4?7:6)-(KG.hard()?2:0);}
 function flood(r0,c0,test){
   var seen={},out=[],q=[[r0,c0]];seen[r0+','+c0]=1;
   while(q.length){var p=q.pop();out.push(p);neighbors(p[0],p[1]).forEach(function(n){var k=n[0]+','+n[1];if(!seen[k]&&rows[n[0]][n[1]]>=0&&test(rows[n[0]][n[1]])){seen[k]=1;q.push(n);}});}
@@ -456,6 +458,7 @@ loadLevel(S.level);syncOpts();showLevels();resize();
 if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
 window.addEventListener('resize',resize);
 last=performance.now();requestAnimationFrame(frame);
+KG.init({game:'bubble-bay',isPlaying:function(){return playing;},onBreak:function(){try{pause();}catch(e){}}});
 })();
 </script>
 </body>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Play Time</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kid Games">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: the sticker book's back page for grown ups. Summary tiles on top, then one bar per game, longest first. */
+:root{
+  --sun:#FFD84D;
+  --sun-deep:#F7C52B;
+  --ink:#231A5C;
+  --paper:#FFFDF5;
+  --bar:#7BE38F;
+  --font-display:'Fredoka','Arial Rounded MT Bold','Trebuchet MS',sans-serif;
+  --font-body:'Nunito','Avenir Next','Segoe UI',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background-color:var(--sun);background-image:radial-gradient(var(--sun-deep) 18%,transparent 19%);background-size:44px 44px;color:var(--ink);font-family:var(--font-body);font-weight:700}
+#app{max-width:860px;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:16px}
+.sticker{background:var(--paper);border:4px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink)}
+#back{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:600;font-size:20px;color:var(--ink);text-decoration:none;padding:8px 18px}
+#back:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(32px,6vw,52px);margin:0;text-shadow:4px 4px 0 var(--paper)}
+#tabs{display:flex;overflow:hidden;padding:0;align-self:flex-start}
+#tabs button{font-family:var(--font-display);font-weight:600;font-size:17px;color:var(--ink);background:transparent;border:0;padding:10px 16px;min-height:46px;cursor:pointer}
+#tabs button + button{border-left:3px solid var(--ink)}
+#tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+#tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.tile{padding:12px 16px}
+.tile small{display:block;font-size:14px;color:#5A5280}
+.tile b{font-family:var(--font-display);font-weight:700;font-size:28px;font-variant-numeric:tabular-nums}
+#list{padding:16px;display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:minmax(120px,170px) 1fr auto;gap:12px;align-items:center}
+.row .name{font-family:var(--font-display);font-weight:600;font-size:17px}
+.row .track{height:22px;border-radius:11px;background:#F1ECD9;overflow:hidden}
+.row .fill{height:100%;border-radius:11px;background:var(--bar)}
+.row .time{font-variant-numeric:tabular-nums;min-width:70px;text-align:right}
+.row.top .fill{background:linear-gradient(90deg,#FFB13D,#FF7AB6)}
+#empty{margin:0;font-size:18px}
+#days{padding:16px}
+#days h2{font-family:var(--font-display);font-weight:600;font-size:20px;margin:0 0 10px}
+#chart{display:flex;align-items:flex-end;gap:6px;height:140px;border-bottom:3px solid var(--ink);padding-top:10px}
+#chart div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%}
+#chart span.b{width:100%;max-width:34px;background:var(--ink);border-radius:6px 6px 0 0;min-height:2px}
+#chart span.v{font-size:12px;font-variant-numeric:tabular-nums}
+#labels{display:flex;gap:6px;margin-top:4px}
+#labels span{flex:1;text-align:center;font-size:12px}
+#note{margin:0;font-size:15px;color:#4A4270;line-height:1.4}
+#reset{align-self:flex-start;font-family:var(--font-display);font-weight:600;font-size:14px;color:rgba(35,26,92,.7);background:rgba(255,253,245,.6);border:2px dashed rgba(35,26,92,.4);border-radius:12px;padding:8px 14px;cursor:pointer;touch-action:none}
+@media (max-width:520px){.row{grid-template-columns:110px 1fr auto}}
+</style>
+</head>
+<body>
+<div id="app">
+  <a id="back" class="sticker" href="level2.html">&larr; Back to Level II</a>
+  <h1>Play Time</h1>
+  <div id="tabs" class="sticker" role="group" aria-label="Time range">
+    <button data-range="1" aria-pressed="false">Today</button>
+    <button data-range="7" aria-pressed="true">Last 7 days</button>
+    <button data-range="30" aria-pressed="false">Last 30 days</button>
+    <button data-range="0" aria-pressed="false">All time</button>
+  </div>
+  <div id="tiles"></div>
+  <div id="list" class="sticker"></div>
+  <div id="days" class="sticker"><h2>Minutes played each day, last 14 days</h2><div id="chart"></div><div id="labels"></div></div>
+  <p id="note">Only counts time she is actually playing: the game is open on screen, not paused, and she has touched it in the last 90 seconds. The log is kept on this iPad only, for up to 120 days.</p>
+  <button id="reset" type="button">Press and hold to clear the log</button>
+</div>
+<script>
+(function(){
+'use strict';
+var NAMES={'block-buddies':'Block Buddies','mangos-big-hop':"Mango's Big Hop",'bubble-garden':'Bubble Garden','berry-maze':'Berry Maze','berry-drop':'Berry Drop','tile-twins':'Tile Twins','mango-dash':'Mango Dash','splash-blast':'Splash Blast','dino-valley':'Dino Valley','waddle-across':'Waddle Across','bubble-bay':'Bubble Bay','sweet-swap':'Sweet Swap'};
+var range=7;
+function $(id){return document.getElementById(id);}
+function load(){try{return JSON.parse(localStorage.getItem('kgLog')||'{}');}catch(e){return {};}}
+function key(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function daysBack(n){var out=[],d=new Date();for(var i=0;i<n;i++){out.push(key(d));d.setDate(d.getDate()-1);}return out;}
+function fmt(sec){var m=Math.round(sec/60);if(m<1)return sec>0?'< 1 min':'0 min';if(m<60)return m+' min';return Math.floor(m/60)+' h '+(m%60)+' min';}
+function render(){
+  var log=load(),days=range?daysBack(range):Object.keys(log),tot={},sum=0,played=0;
+  days.forEach(function(d){var day=log[d];if(!day)return;var any=0;for(var g in day){tot[g]=(tot[g]||0)+day[g];sum+=day[g];any+=day[g];}if(any>=60)played++;});
+  var games=Object.keys(tot).sort(function(a,b){return tot[b]-tot[a];});
+  var top=games[0];
+  $('tiles').innerHTML=
+    '<div class="tile sticker"><small>Total play</small><b>'+fmt(sum)+'</b></div>'+
+    '<div class="tile sticker"><small>Favorite game</small><b>'+(top?(NAMES[top]||top):'None yet')+'</b></div>'+
+    '<div class="tile sticker"><small>Days played</small><b>'+played+(range?' of '+range:'')+'</b></div>'+
+    '<div class="tile sticker"><small>Average per play day</small><b>'+fmt(played?sum/played:0)+'</b></div>';
+  if(!games.length){$('list').innerHTML='<p id="empty">No play time logged for this range yet. It starts counting from today’s update.</p>';}
+  else{
+    var max=tot[top];
+    $('list').innerHTML=games.map(function(g,i){
+      return '<div class="row'+(i===0?' top':'')+'"><span class="name">'+(NAMES[g]||g)+'</span><span class="track"><span class="fill" style="display:block;width:'+Math.max(2,tot[g]/max*100)+'%"></span></span><span class="time">'+fmt(tot[g])+'</span></div>';
+    }).join('');
+  }
+  var d14=daysBack(14).reverse(),vals=d14.map(function(d){var s=0,day=log[d]||{};for(var g in day)s+=day[g];return Math.round(s/60);}),mx=Math.max.apply(null,vals.concat([1]));
+  $('chart').innerHTML=vals.map(function(v){return '<div><span class="v">'+(v||'')+'</span><span class="b" style="height:'+(v/mx*100)+'%"></span></div>';}).join('');
+  var W=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  $('labels').innerHTML=d14.map(function(d){var p=d.split('-');return '<span>'+W[new Date(+p[0],+p[1]-1,+p[2]).getDay()]+'</span>';}).join('');
+}
+document.querySelectorAll('#tabs button').forEach(function(b){b.addEventListener('click',function(){range=+b.dataset.range;document.querySelectorAll('#tabs button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});render();});});
+var r=$('reset'),hold=null;
+r.addEventListener('pointerdown',function(e){e.preventDefault();r.textContent='Keep holding...';hold=setTimeout(function(){try{localStorage.removeItem('kgLog');}catch(err){}r.textContent='Log cleared';render();},2500);});
+['pointerup','pointerleave','pointercancel'].forEach(function(ev){r.addEventListener(ev,function(){clearTimeout(hold);if(r.textContent==='Keep holding...')r.textContent='Press and hold to clear the log';});});
+render();
+})();
+</script>
+</body>
+</html>

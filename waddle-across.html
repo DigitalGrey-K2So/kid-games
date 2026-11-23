@@ -127,9 +127,11 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
     </nav>
   </div>
 </div>
+<script src="kidkit.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 /* rows from the top: 0 nests, 1-4 pond, 5 grass, 6-9 road, 10 start */
 var COLS=9,ROWS=11,CS=72,W=COLS*CS,H=ROWS*CS,INK='#2B2A4C';
 var NESTS=[0,2,4,6,8];
@@ -162,7 +164,7 @@ function setup(){
   $('level').textContent=S.level;
 }
 function resetDuck(){duck={col:4,row:10,x:4*CS+CS/2,hop:0,fromX:0,fromY:0,face:0,bumped:0,splash:0,best:10};}
-function speedNow(){return SPEED[S.speed]*(1+(S.level-1)*.12);}
+function speedNow(){return KG.boost()*SPEED[S.speed]*(1+(S.level-1)*.12);}
 
 /* ---------- moving ---------- */
 function hop(dc,dr){
@@ -198,6 +200,7 @@ function levelUp(){
 }
 function oops(kind){
   if(duck.bumped>0)return;
+  KG.error();
   duck.bumped=.8;duck.kind=kind;
   if(kind==='splash'){burst(duck.x,duck.row*CS+CS/2,'#9BE4FF',14);sfx.splash();toast('Splash! Ride a log or a lily pad');}
   else{burst(duck.x,duck.row*CS+CS/2,'#FFFFFF',10);sfx.beep();toast('Beep beep! Wait for a gap');}
@@ -445,6 +448,7 @@ syncOpts();setup();resize();
 if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
 window.addEventListener('resize',resize);
 last=performance.now();requestAnimationFrame(frame);
+KG.init({game:'waddle-across',isPlaying:function(){return playing;},onBreak:function(){try{pause();}catch(e){}}});
 })();
 </script>
 </body>

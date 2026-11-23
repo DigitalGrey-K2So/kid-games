@@ -109,9 +109,11 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
     </div>
   </main>
 </div>
+<script src="kidkit.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 var INK='#2A1D55';
 var SETS={
   food:['🍎','🍌','🍇','🍓','🍊','🥕','🍉','🍒','🥝','🍋','🌽','🍐'],
@@ -189,7 +191,7 @@ function reshuffle(){
   toast('Shuffle!');sfx.shuffle();
 }
 function tapTile(t){
-  if(!isFree(t)){shake={t:t,time:.35};sfx.nope();return;}
+  if(!isFree(t)){shake={t:t,time:.35};sfx.nope();KG.error();return;}
   hint=null;
   if(!sel){sel=t;sfx.pick();return;}
   if(sel===t){sel=null;return;}
@@ -330,6 +332,7 @@ function start(data){
 var hot=window.claude&&window.claude.hot;
 if(hot&&hot.snapshot)hot.snapshot(function(){return {level:S.level,score:S.score};});
 if(hot&&hot.ready)hot.ready(start);else start(hot&&hot.data?hot.data:{});
+KG.init({game:'tile-twins',isPlaying:function(){return playing;},onBreak:function(){try{pause();}catch(e){}}});
 })();
 </script>
 </body>

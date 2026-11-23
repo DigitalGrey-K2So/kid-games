@@ -153,9 +153,11 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
   </nav>
 </div>
 
+<script src="kidkit.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 var VH=360, GROUND=285, MINVIEW=560;
 var INK='#143A2E';
 var SPEED={turtle:{p:130,c:32},bunny:{p:165,c:62},cheetah:{p:200,c:100}};
@@ -238,7 +240,7 @@ function waterAt(x){return zoneAt(L.waters,x,6);}
 /* ---------- update ---------- */
 function bonk(fromX){
   P.x=Math.max(24,P.x+(P.x<fromX?-56:56));P.vy=-260;P.on=false;P.inv=1;
-  toast('Bonk!');sfx.bonk();
+  toast('Bonk!');sfx.bonk();KG.error();
 }
 function update(dt){
   clock+=dt;
@@ -281,7 +283,7 @@ function update(dt){
     burst(P.x,GROUND+6,T.foam,10);
     if(w)P.x=(S.auto||P.safeX>=w.x+w.w/2)?w.x+w.w+46:w.x-46;else P.x=P.safeX;
     P.y=GROUND;P.vy=0;P.vx=0;P.on=true;P.inv=.8;
-    toast('Splash!');sfx.splash();
+    toast('Splash!');sfx.splash();KG.error();
   }
   /* rolling things */
   for(i=0;i<L.rolls.length;i++){
@@ -711,6 +713,7 @@ function start(data){
 var hot=window.claude&&window.claude.hot;
 if(hot&&hot.snapshot)hot.snapshot(function(){return {level:S.level,fruit:S.fruit,speed:S.speed,auto:S.auto};});
 if(hot&&hot.ready)hot.ready(start);else start(hot&&hot.data?hot.data:{});
+KG.init({game:'mangos-big-hop',isPlaying:function(){return playing;},onBreak:function(){try{pause();}catch(e){}}});
 })();
 </script>
 </body>

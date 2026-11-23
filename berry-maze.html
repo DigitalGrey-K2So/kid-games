@@ -134,9 +134,11 @@ body.stick #hint{display:none}
   </div>
   <p id="hint">Swipe anywhere to turn Pip. Tap to point the way.</p>
 </div>
+<script src="kidkit.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 var MAZES=[[
 '###########',
 '#o...#...o#',
@@ -271,13 +273,13 @@ function update(dt){
   /* fuzzies */
   fuzz.forEach(function(f){
     if(f.wait>0){f.wait-=dt;return;}
-    advance(f,(starT>0?sp.f*.6:sp.f)*dt,fuzzChoose);
+    advance(f,(starT>0?sp.f*.6:sp.f)*KG.boost()*dt,fuzzChoose);
     if(Math.hypot(f.x-pip.x,f.y-pip.y)<.6){
       if(starT>0){
         S.score+=5;showScore();burst(f.x,f.y,f.col,12);toast('Boop! +5');sfx.boop();
         var h=f.home;f.x=f.fx=f.tx=h.x;f.y=f.fy=f.ty=h.y;f.dir=null;f.wait=3;
       }else if(pip.inv<=0){
-        toast('Oops! Back to start');sfx.oops();resetPip();pip.inv=2;
+        toast('Oops! Back to start');KG.error();sfx.oops();resetPip();pip.inv=2;
       }
     }
   });
@@ -491,6 +493,7 @@ function start(data){
 var hot=window.claude&&window.claude.hot;
 if(hot&&hot.snapshot)hot.snapshot(function(){return {score:S.score,level:S.level};});
 if(hot&&hot.ready)hot.ready(start);else start(hot&&hot.data?hot.data:{});
+KG.init({game:'berry-maze',isPlaying:function(){return playing;},onBreak:function(){try{pause();}catch(e){}}});
 })();
 </script>
 </body>

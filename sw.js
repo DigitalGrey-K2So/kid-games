@@ -1,9 +1,11 @@
 /* Offline support. Change VERSION whenever you upload new copies of the games so the iPad picks them up. */
-var VERSION = 'kid-games-v14';
+var VERSION = 'kid-games-v15';
 var FILES = [
   './',
   'index.html',
   'level2.html',
+  'playtime.html',
+  'kidkit.js',
   'block-buddies.html',
   'mangos-big-hop.html',
   'bubble-garden.html',

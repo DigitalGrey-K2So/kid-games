@@ -117,11 +117,13 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
     </div>
   </main>
 </div>
+<script src="kidkit.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 function $(id){return document.getElementById(id);}
 var overlay=$('overlay');
 function showProblem(msg){
@@ -434,6 +436,7 @@ function win(){
   try{localStorage.setItem('splashBlast',JSON.stringify({sound:S.sound,level:S.level+1}));}catch(e){}
 }
 function outOfBalls(){
+  KG.error();
   playing=false;
   $('cardTitle').textContent='Out of balls!';$('cardStars').innerHTML='';
   $('cardSub').textContent=targetsLeft+(targetsLeft===1?' jelly blob is':' jelly blobs are')+' still on the island.';
@@ -480,6 +483,7 @@ loadLevel();resize();
 if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
 window.addEventListener('resize',resize);
 requestAnimationFrame(frame);
+KG.init({game:'splash-blast',isPlaying:function(){return playing;},onBreak:function(){try{pause();}catch(e){}}});
 })();
 </script>
 </body>

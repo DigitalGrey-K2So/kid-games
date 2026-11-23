@@ -112,9 +112,11 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
     </div>
   </main>
 </div>
+<script src="kidkit.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 var N=8,INK='#5A2440';
 var NAMES=['Milkshake','Cake','Pie','Chocolate','Popsicle','Cupcake'];
 var TINT=['#FF8FC0','#FFD45C','#B57BFF','#A0603A','#5CC8FF','#6FE0B0'];
@@ -175,7 +177,7 @@ async function trySwap(a,b){
   var runs=findMatches();
   if(!runs.length&&!A.sp&&!B.sp){
     swapGrid(a,b);A.ox=b[1]-a[1];A.oy=b[0]-a[0];B.ox=a[1]-b[1];B.oy=a[0]-b[0];
-    sfx.nope();await settled();busy=false;return;
+    sfx.nope();KG.error();await settled();busy=false;return;
   }
   moves--;showHud();
   var forced=[];
@@ -475,6 +477,7 @@ loadLevel(Math.min(LEVELS.length,S.best+1));showLevels();resize();
 if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
 window.addEventListener('resize',resize);
 last=performance.now();requestAnimationFrame(frame);
+KG.init({game:'sweet-swap',isPlaying:function(){return state==='play';},onBreak:function(){try{pause();}catch(e){}}});
 })();
 </script>
 </body>

@@ -112,9 +112,11 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
   <p id="tip">Tap a seed, then tap the grass to plant it.</p>
   <nav id="shelf" aria-label="Things to plant and build"></nav>
 </div>
+<script src="kidkit.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 var COLS=10,ROWS=7,INK='#2C3A1E';
 /* grow times are short on purpose: a 6 year old should see a carrot ripen while she watches */
 var ITEMS=[
@@ -402,7 +404,7 @@ var sfx={
   place:function(){tone(300,.1,'triangle',.11,0,520);},
   harvest:function(){tone(784,.08,'triangle',.11);tone(1175,.14,'triangle',.11,.07);},
   pop:function(){tone(500,.1,'sine',.1,0,200);},
-  nope:function(){tone(200,.1,'sine',.07);},
+  nope:function(){tone(200,.1,'sine',.07);KG.error();},
   hug:function(){tone(520,.12,'sine',.1,0,880);tone(700,.14,'sine',.08,.1,1000);},
   yay:function(){[523,659,784,1047].forEach(function(f,i){tone(f,.18,'triangle',.12,i*.09);});}
 };
@@ -436,6 +438,7 @@ if(G.coins!==20||homes().length>1){$('cardTitle').textContent='Welcome back!';$(
 if(window.ResizeObserver)new ResizeObserver(resize).observe(stage);
 window.addEventListener('resize',resize);
 last=performance.now();requestAnimationFrame(frame);
+KG.init({game:'dino-valley',isPlaying:function(){return playing;},onBreak:function(){try{menu();}catch(e){}}});
 })();
 </script>
 </body>

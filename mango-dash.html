@@ -115,9 +115,11 @@ a.mini:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
     </div>
   </main>
 </div>
+<script src="kidkit.js"></script>
 <script>
 (function(){
 'use strict';
+var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},pickWord:function(){return {word:'cat',pic:''};},wordBar:function(){return null;}};
 var INK='#143A2E',FAR=55,CAM=4.2,GAP={turtle:15,bunny:13,cheetah:11};
 var SPEED={turtle:7,bunny:10,cheetah:13};
 function $(id){return document.getElementById(id);}
@@ -150,13 +152,17 @@ function spawnRow(z){
   var open=[-1,0,1].filter(function(l){return blocked.indexOf(l)<0;});
   var fl=open[Math.floor(Math.random()*open.length)];
   for(var j=0;j<4;j++)things.push({kind:'fruit',lane:fl,z:z+3+j*1.6,y:.35,c:(j+Math.floor(z))%3});
+  if(WB&&WB.word&&WB.need<WB.word.word.length&&!things.some(function(t){return t.kind==='letter';})&&Math.random()<.7){
+    var ll=open[Math.floor(Math.random()*open.length)];
+    things.push({kind:'letter',lane:ll,z:z+9,y:.55,ch:WB.nextLetter});
+  }
 }
 
 /* ---------- update ---------- */
 function update(dt){
   clock+=dt;
   slow=Math.min(1,slow+dt*.6);
-  var v=SPEED[S.speed]*(1+Math.min(.25,dist/3000))*slow,dz=v*dt,i;
+  var v=KG.boost()*SPEED[S.speed]*(1+Math.min(.25,dist/3000))*slow,dz=v*dt,i;
   dist+=dz;P.step+=dz*1.4;
   nextRow-=dz;
   if(nextRow<=0){spawnRow(FAR);nextRow=GAP[S.speed]*(.85+Math.random()*.3);}
@@ -168,6 +174,13 @@ function update(dt){
     var t=things[i],oz=t.z;t.z-=dz;
     if(t.z<-3){things.splice(i,1);continue;}
     var sameLane=Math.abs(t.lane-P.x)<.5;
+    if(t.kind==='letter'){
+      if(sameLane&&Math.abs(t.z)<.7&&Math.abs(P.y+.4-t.y)<.8){
+        things.splice(i,1);burst(t,'#FFFFFF');
+        if(WB&&t.ch===WB.nextLetter){WB.fill();sfx.letter();KG.speak(t.ch);if(WB.need>=WB.word.word.length)wordDone();}
+      }
+      continue;
+    }
     if(t.kind==='fruit'){
       if(!t.got&&sameLane&&Math.abs(t.z)<.7&&Math.abs(P.y+.4-t.y)<.75){t.got=true;S.fruit++;showFruit();sfx.fruit();burst(t,'#FFD84D');things.splice(i,1);}
       continue;
@@ -181,7 +194,7 @@ function update(dt){
   if(Math.floor(m/250)>milestone){milestone=Math.floor(m/250);toast(milestone*250+' meters!');sfx.cheer();}
 }
 function bonk(t){
-  P.inv=1.3;slow=.35;
+  P.inv=1.3;slow=.35;KG.error();
   toast(t.kind==='bush'?'Bonk! Try another lane':t.kind==='log'?'Oops! Jump the logs':'Duck! Slide under');
   sfx.bonk();burst({lane:P.x,z:.5,y:.8},'#FFFFFF');
 }
@@ -247,6 +260,12 @@ function draw(){
       ctx.fillRect(p.x-w*.5,p.y-w*1.15,w*.08,w*1.15);ctx.fillRect(p.x+w*.42,p.y-w*1.15,w*.08,w*1.15);
       ctx.beginPath();ctx.rect(p.x-w*.55,p.y-w*.95,w*1.1,w*.2);ctx.fill();ctx.stroke();
       ctx.fillStyle='#4FB776';for(i=0;i<4;i++){ell(p.x-w*.4+i*w*.27,p.y-w*.72,w*.09,w*.06);ctx.fill();}
+    }else if(t.kind==='letter'){
+      var lq=proj(t.lane,t.z,t.y+Math.sin(clock*3+t.z)*.06),lr=w*.24;
+      ctx.fillStyle='rgba(255,255,255,.9)';ctx.strokeStyle=INK;ctx.lineWidth=Math.max(1.5,3*p.s);ell(lq.x,lq.y,lr,lr);ctx.fill();ctx.stroke();
+      ctx.fillStyle='rgba(120,200,255,.35)';ell(lq.x-lr*.3,lq.y-lr*.35,lr*.35,lr*.22);ctx.fill();
+      ctx.font='700 '+Math.round(lr*1.35)+'px Fredoka, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillStyle='#9B4DFF';ctx.fillText(t.ch.toUpperCase(),lq.x,lq.y+lr*.06);
     }else if(t.kind==='fruit'){
       var q=proj(t.lane,t.z,t.y+Math.sin(clock*4+t.z)*.05),r=w*.14;
       if(t.c===2){ctx.strokeStyle=INK;ctx.lineWidth=r*.9;ctx.beginPath();ctx.arc(q.x,q.y-r*.6,r,Math.PI*.15,Math.PI*.85);ctx.stroke();ctx.strokeStyle='#FFD93B';ctx.lineWidth=r*.5;ctx.beginPath();ctx.arc(q.x,q.y-r*.6,r,Math.PI*.15,Math.PI*.85);ctx.stroke();}
@@ -327,6 +346,8 @@ var sfx={
   jump:function(){tone(300,.16,'triangle',.1,0,600);},
   slide:function(){tone(500,.18,'sine',.07,0,200);},
   swish:function(){tone(700,.07,'sine',.05,0,900);},
+  letter:function(){tone(880,.08,'triangle',.1);tone(1320,.1,'triangle',.08,.06);},
+  word:function(){[784,988,1175,1568].forEach(function(f,i){tone(f,.16,'triangle',.11,i*.08);});},
   fruit:function(){tone(784,.08,'triangle',.1);tone(1047,.12,'triangle',.1,.07);},
   bonk:function(){tone(180,.18,'square',.07,0,110);},
   cheer:function(){[523,659,784,1047].forEach(function(f,i){tone(f,.18,'triangle',.11,i*.09);});}
@@ -363,6 +384,19 @@ function start(data){
 var hot=window.claude&&window.claude.hot;
 if(hot&&hot.snapshot)hot.snapshot(function(){return {fruit:S.fruit};});
 if(hot&&hot.ready)hot.ready(start);else start(hot&&hot.data?hot.data:{});
+var WB=KG.wordBar($('info'),$('homeBtn'));
+function wordDone(){
+  var w=WB.word.word,bonus=10;
+  S.fruit+=bonus;showFruit();WB.done();sfx.word();
+  toast('You spelled '+w.toUpperCase()+'! +'+bonus);
+  setTimeout(function(){KG.speak(w+'! '+w.split('').join(', ')+'. '+w+'!');},500);
+  things=things.filter(function(t){return t.kind!=='letter';});
+  setTimeout(function(){if(WB){WB.set(KG.pickWord(4));KG.speak('Spell '+WB.word.word);}},3200);
+}
+if(WB)WB.set(KG.pickWord(4));
+var saidFirst=false;
+$('playBtn').addEventListener('click',function(){if(!saidFirst&&WB&&WB.word){saidFirst=true;setTimeout(function(){KG.speak('Spell '+WB.word.word);},300);}});
+KG.init({game:'mango-dash',isPlaying:function(){return playing;},onBreak:function(){try{pause();}catch(e){}}});
 })();
 </script>
 </body>

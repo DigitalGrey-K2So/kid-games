@@ -70,6 +70,8 @@ h1{font-family:var(--font-display);font-weight:700;font-size:clamp(34px,7vw,64px
 #note{text-align:center;margin:0;font-size:17px}
 #grid{grid-template-columns:repeat(2,minmax(0,300px));justify-content:center;grid-auto-rows:minmax(0,300px)}
 @media (orientation:landscape) and (min-width:700px){#grid{grid-template-columns:repeat(3,minmax(0,300px))}}
+#ptime{align-self:center;font-family:var(--font-display);font-weight:600;font-size:18px;color:var(--ink);background:#FFFDF5;border:3px solid var(--ink);border-radius:16px;box-shadow:0 4px 0 var(--ink);padding:8px 18px;text-decoration:none}
+#ptime:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
 </style>
 </head>
 <body>
@@ -77,6 +79,7 @@ h1{font-family:var(--font-display);font-weight:700;font-size:clamp(34px,7vw,64px
   <a id="back" href="index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.5L12 4l8.5 7.5" fill="none" stroke="#231A5C" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 10v9.5h4.5v-5h3v5H18V10" fill="none" stroke="#231A5C" stroke-width="2.6" stroke-linejoin="round"/></svg>Back to all games</a>
   <h1>Level II</h1>
   <p id="note">Bigger games for bigger kids.</p>
+  <a id="ptime" href="playtime.html">Play time log</a>
   <nav id="grid">
     <a id="g10" class="game" href="coop-defense.html">
       <svg viewBox="0 0 120 120" aria-hidden="true">
