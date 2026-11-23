@@ -68,8 +68,8 @@ h1{font-family:var(--font-display);font-weight:700;font-size:clamp(34px,7vw,64px
 #back:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
 #back svg{width:26px;height:26px}
 #note{text-align:center;margin:0;font-size:17px}
-#grid{grid-template-columns:repeat(2,minmax(0,320px));justify-content:center;grid-auto-rows:minmax(0,320px)}
-@media (orientation:landscape) and (min-width:700px){#grid{grid-template-columns:repeat(2,minmax(0,320px))}}
+#grid{grid-template-columns:repeat(2,minmax(0,300px));justify-content:center;grid-auto-rows:minmax(0,300px)}
+@media (orientation:landscape) and (min-width:700px){#grid{grid-template-columns:repeat(3,minmax(0,300px))}}
 </style>
 </head>
 <body>
@@ -78,6 +78,26 @@ h1{font-family:var(--font-display);font-weight:700;font-size:clamp(34px,7vw,64px
   <h1>Level II</h1>
   <p id="note">Bigger games for bigger kids.</p>
   <nav id="grid">
+    <a id="g10" class="game" href="coop-defense.html">
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <g stroke="#4A2A12" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M14 66l-10-12 8 2-6-8 12 10z" fill="#FFB347"/>
+          <ellipse cx="30" cy="70" rx="20" ry="16" fill="#FFB347"/>
+          <ellipse cx="40" cy="50" rx="12" ry="12" fill="#FFB347"/>
+          <path d="M50 46l11 3-11 5z" fill="#FFB52E"/>
+          <path d="M84 52l-2-16 10 10M98 46l4-14 4 16" fill="#FFA654"/>
+          <ellipse cx="96" cy="58" rx="16" ry="14" fill="#FFA654"/>
+          <ellipse cx="102" cy="84" rx="18" ry="14" fill="#FFA654"/>
+        </g>
+        <circle cx="36" cy="40" r="4" fill="#FF4D5A"/><circle cx="42" cy="38" r="4" fill="#FF4D5A"/>
+        <ellipse cx="43" cy="48" rx="3.5" ry="4" fill="#fff"/><circle cx="44" cy="48.5" r="2" fill="#4A2A12"/>
+        <ellipse cx="89" cy="57" rx="4" ry="5" fill="#C7F25A"/><ellipse cx="102" cy="57" rx="4" ry="5" fill="#C7F25A"/>
+        <rect x="88" y="55" width="2" height="5" fill="#4A2A12"/><rect x="101" y="55" width="2" height="5" fill="#4A2A12"/>
+        <ellipse cx="68" cy="50" rx="6" ry="5" fill="#FFD84D" stroke="#4A2A12" stroke-width="2.5"/>
+        <ellipse cx="58" cy="100" rx="9" ry="11" fill="#FFD84D" stroke="#4A2A12" stroke-width="3"/>
+      </svg>
+      Coop Defense
+    </a>
     <a id="g11" class="game" href="westward.html">
       <svg viewBox="0 0 120 120" aria-hidden="true">
         <rect x="4" y="14" width="112" height="92" rx="10" fill="#0B140B" stroke="#231A5C" stroke-width="4"/>
