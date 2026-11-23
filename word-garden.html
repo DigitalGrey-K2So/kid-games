@@ -150,14 +150,15 @@ h1{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,5vw,40px
 (function(){
 'use strict';
 var KG=window.KG||{init:function(){},hard:function(){return false;},boost:function(){return 1;},error:function(){},banner:function(){},speak:function(){},words:[{word:'cat',pic:'🐱'},{word:'dog',pic:'🐶'},{word:'sun',pic:'☀️'}]};
-/* each level: word length, how many extra wrong letters, words to grow */
+/* each level mixes 3 and 4 letter words: [how many 3 letter, how many 4 letter], plus extra wrong letters */
 var LEVELS=[
-  {len:3,decoys:1,count:5,name:'3 letters'},
-  {len:3,decoys:2,count:5,name:'3 letters'},
-  {len:4,decoys:1,count:5,name:'4 letters'},
-  {len:4,decoys:2,count:5,name:'4 letters'},
-  {len:4,decoys:3,count:6,name:'Expert'}
+  {mix:[4,1],decoys:1,name:'Mostly 3 letter'},
+  {mix:[3,2],decoys:1,name:'3 and 4 letter'},
+  {mix:[3,3],decoys:2,name:'3 and 4 letter'},
+  {mix:[2,4],decoys:2,name:'Mostly 4 letter'},
+  {mix:[2,4],decoys:3,name:'Expert'}
 ];
+LEVELS.forEach(function(L){L.count=L.mix[0]+L.mix[1];});
 var SEEDCOL=['#FFB3C7','#FFE38A','#B9E8FF','#D7C2FF','#C6F2B0','#FFC9A0'];
 var FLOWER=['#FF7AB6','#FF5A6E','#B57BFF','#FFB13D','#5CC8FF','#FF8A3D'];
 function $(id){return document.getElementById(id);}
@@ -168,8 +169,10 @@ var lv,queue=[],word=null,need=0,seeds=[],playing=false,busy=false,mistakes=0,le
 function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
 function startLevel(n){
   S.level=n;lv=LEVELS[n-1];levelMistakes=0;
-  var pool=KG.words.filter(function(w){return w.word.length===lv.len;});
-  queue=shuffle(pool.slice()).slice(0,lv.count);
+  var three=shuffle(KG.words.filter(function(w){return w.word.length===3;})).slice(0,lv.mix[0]);
+  var four=shuffle(KG.words.filter(function(w){return w.word.length===4;})).slice(0,lv.mix[1]);
+  /* shuffle them together, but start with a 3 letter word so each level eases in */
+  queue=shuffle(three.slice(1).concat(four));if(three.length)queue.unshift(three[0]);
   $('level').textContent=n;$('fence').innerHTML='';
   nextWord();
 }

@@ -1,5 +1,5 @@
 /* Offline support. Change VERSION whenever you upload new copies of the games so the iPad picks them up. */
-var VERSION = 'kid-games-v16';
+var VERSION = 'kid-games-v17';
 var FILES = [
   './',
   'index.html',
